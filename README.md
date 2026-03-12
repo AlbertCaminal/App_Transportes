@@ -99,23 +99,3 @@ La plataforma utiliza una arquitectura basada en **tecnologías híbridas** y **
 La aplicación actúa como cliente directo, comunicándose en tiempo real con Firebase para actualizaciones de estado y mapas de Mapbox. Las validaciones críticas (como el cobro seguro en Stripe) se delegan a las **Cloud Functions** de Firebase, manteniendo la arquitectura segura y desacoplada.
 
 ---
-
-## Instalación
-
-```bash
-# Clonar el repositorio
-git clone <url-del-repositorio>
-cd App_Transporte
-
-# Instalar dependencias
-npm install
-
-# Ejecutar en desarrollo
-npm run android  # o npm run ios
-```
-
----
-
-## Licencia
-
-[Especificar licencia del proyecto]
