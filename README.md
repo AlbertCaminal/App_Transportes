@@ -2,6 +2,8 @@
 
 Plataforma móvil de logística colaborativa que conecta remitentes con conductores independientes para optimizar la entrega de paquetes en Barcelona.
 
+**Cliente:** React Native con [Expo](https://expo.dev/) (TypeScript). La app vive en la raíz de este repositorio.
+
 ---
 
 ## 1. Idea del Proyecto
@@ -57,7 +59,7 @@ Los wireframes diseñados priorizan una jerarquía visual clara, botones de Llam
 **Herramienta utilizada:** Figma
 
 | Figura | Descripción |
-|-------|-------------|
+|--------|-------------|
 | **Figura 1** | Pantalla de inicio de sesión y registro de usuarios. |
 | **Figura 2** | Interfaz principal con el mapa para seleccionar puntos de recogida y entrega. |
 | **Figura 3** | Pasarela de pago integrada con resumen de la transacción. |
@@ -70,52 +72,58 @@ Los wireframes diseñados priorizan una jerarquía visual clara, botones de Llam
 
 ## 4. Arquitectura y Tecnología
 
-La plataforma utiliza una arquitectura basada en **tecnologías híbridas** y **servicios en la nube (Backend as a Service - BaaS)** para un despliegue rápido, eficiente y escalable.
-
-### Stack tecnológico
+### Stack tecnológico previsto
 
 | Capa | Tecnología | Descripción |
 |------|------------|-------------|
-| **Frontend** | React Native | Una única base de código (JavaScript/TypeScript) para iOS y Android. Rendimiento cercano al nativo y posibilidad de versión web futura. |
-| **Backend** | Firebase | BaaS para autenticación, base de datos NoSQL en tiempo real (Cloud Firestore) y Cloud Functions para lógica de negocio y emparejamiento. |
-| **Mapas** | Mapbox | SDK para mapas, geolocalización, enrutamiento y seguimiento en tiempo real. Modelo de precios económico y alta personalización. |
-| **Pagos** | Stripe + PayPal | Stripe como procesador principal (API REST y SDK móvil, PCI DSS). PayPal como alternativa para usuarios europeos. |
+| **Frontend** | React Native (Expo) | Una base de código para iOS, Android y prueba en web con Expo. |
+| **Backend** | Firebase | BaaS para autenticación, base de datos en tiempo real y Cloud Functions. |
+| **Mapas** | Mapbox | Mapas, geolocalización y rutas (integración futura). |
+| **Pagos** | Stripe + PayPal | Pasarelas de pago (integración futura). |
 
-### Estructura general
+Los tipos de dominio compartidos están en [`shared/types.ts`](shared/types.ts).
 
+### Desarrollo (calidad de código)
+
+```bash
+npm run typecheck   # TypeScript sin emitir archivos
+npm run lint        # ESLint (configuración Expo)
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    React Native (Frontend)                   │
-└─────────────────────────────────────────────────────────────┘
-         │                    │                    │
-         ▼                    ▼                    ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│   Firebase   │    │    Mapbox    │    │    Stripe    │
-│  (Auth, DB,  │    │   (Mapas,    │    │   (Pagos)   │
-│  Functions)  │    │  Rutas, GPS) │    │    PayPal    │
-└──────────────┘    └──────────────┘    └──────────────┘
-```
-
-La aplicación actúa como cliente directo, comunicándose en tiempo real con Firebase para actualizaciones de estado y mapas de Mapbox. Las validaciones críticas (como el cobro seguro en Stripe) se delegan a las **Cloud Functions** de Firebase, manteniendo la arquitectura segura y desacoplada.
 
 ---
 
-## Instalación
+## Instalación y ejecución
+
+Requisitos: [Node.js](https://nodejs.org/) LTS y, para dispositivo físico, [Expo Go](https://expo.dev/go).
 
 ```bash
-# Clonar el repositorio
-git clone <url-del-repositorio>
 cd App_Transporte
-
-# Instalar dependencias
 npm install
-
-# Ejecutar en desarrollo
-npm run android  # o npm run ios
+npx expo start
 ```
+
+- **Android:** `a` en la terminal de Expo o escanear el QR con Expo Go.
+- **iOS:** `i` (macOS con Xcode) o Expo Go.
+- **Web (opcional):** `w` — requiere `react-dom` y `react-native-web` (ya en dependencias).
+
+---
+
+## Publicación (Play, App Store y web)
+
+El código está organizado en **Expo** para compartir la misma base entre **Android**, **iOS** y **web**. La configuración de identificadores, iconos y perfiles de build está en [`app.config.ts`](app.config.ts) y [`eas.json`](eas.json).
+
+| Objetivo | Acción |
+|----------|--------|
+| **Builds de tienda** | Cuenta Expo + [EAS Build](https://docs.expo.dev/build/introduction/): `eas build` con perfil `production`. Ajusta `bundleIdentifier` / `package` y versiones antes de subir. |
+| **Metadatos legales** | Rellena URLs y contacto en [`src/config/publicApp.ts`](src/config/publicApp.ts) (política de privacidad obligatoria en tiendas si tratáis datos personales). |
+| **Sitio web estático** | `npm run export:web` genera archivos estáticos (por defecto en `dist/`) para subirlos a tu hosting. |
+
+Checklist detallada (permisos, Play Console, App Store Connect, secretos): **[docs/STORE_RELEASE.md](docs/STORE_RELEASE.md)**.
+
+Variables de entorno de ejemplo (sin secretos en el repo): [`.env.example`](.env.example).
 
 ---
 
 ## Licencia
 
-[Especificar licencia del proyecto]
+Proyecto académico (DAW). Todos los derechos reservados por el autor, salvo que se indique otra licencia en el repositorio.
