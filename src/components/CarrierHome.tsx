@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  Dimensions,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Modal, Dimensions } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -73,9 +65,33 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
   nextDay.setDate(nextDay.getDate() + 2);
 
   const [routes, setRoutes] = useState<Route[]>([
-    { id: 1, date: 'Demà, 10:00', dateObj: tomorrow, route: 'Sants ➔ Poblenou', price: '18.50€', size: 'M', status: 'pending' },
-    { id: 2, date: '25 Oct, 15:30', dateObj: nextDay, route: 'Gràcia ➔ Sarrià', price: '12.00€', size: 'S', status: 'pending' },
-    { id: 3, date: '26 Oct, 09:00', dateObj: new Date(2025, 9, 26), route: 'Eixample ➔ El Prat', price: '32.40€', size: 'H', status: 'pending' },
+    {
+      id: 1,
+      date: 'Demà, 10:00',
+      dateObj: tomorrow,
+      route: 'Sants ➔ Poblenou',
+      price: '18.50€',
+      size: 'M',
+      status: 'pending',
+    },
+    {
+      id: 2,
+      date: '25 Oct, 15:30',
+      dateObj: nextDay,
+      route: 'Gràcia ➔ Sarrià',
+      price: '12.00€',
+      size: 'S',
+      status: 'pending',
+    },
+    {
+      id: 3,
+      date: '26 Oct, 09:00',
+      dateObj: new Date(2025, 9, 26),
+      route: 'Eixample ➔ El Prat',
+      price: '32.40€',
+      size: 'H',
+      status: 'pending',
+    },
   ]);
 
   const confirmedRoutes = useMemo(() => routes.filter((r) => r.status === 'confirmed'), [routes]);
@@ -175,17 +191,27 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
         <View style={styles.tabs}>
           <Pressable
             onPress={() => setView('radar')}
+            accessibilityRole="button"
+            accessibilityLabel={t.radar}
+            accessibilityState={{ selected: view === 'radar' }}
             style={[styles.tab, view === 'radar' && styles.tabActive]}
           >
             <Radar color={view === 'radar' ? '#fff' : theme.gray600} size={16} />
-            <Text style={[styles.tabTxt, view === 'radar' && styles.tabTxtActive]}>{t.radar.toUpperCase()}</Text>
+            <Text style={[styles.tabTxt, view === 'radar' && styles.tabTxtActive]}>
+              {t.radar.toUpperCase()}
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => setView('board')}
+            accessibilityRole="button"
+            accessibilityLabel={t.board}
+            accessibilityState={{ selected: view === 'board' }}
             style={[styles.tab, view === 'board' && styles.tabActive]}
           >
             <List color={view === 'board' ? '#fff' : theme.gray600} size={16} />
-            <Text style={[styles.tabTxt, view === 'board' && styles.tabTxtActive]}>{t.board.toUpperCase()}</Text>
+            <Text style={[styles.tabTxt, view === 'board' && styles.tabTxtActive]}>
+              {t.board.toUpperCase()}
+            </Text>
           </Pressable>
         </View>
 
@@ -193,7 +219,7 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
           <View style={styles.section}>
             <View style={styles.rowBetween}>
               <Text style={styles.sectionTitle}>{t.todayActivity}</Text>
-              <Pressable onPress={onExit}>
+              <Pressable onPress={onExit} accessibilityRole="button" accessibilityLabel={t.closeSession}>
                 <Text style={styles.linkOut}>{t.closeSession.toUpperCase()}</Text>
               </Pressable>
             </View>
@@ -241,7 +267,12 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
             <View style={styles.rowBetween}>
               <Text style={styles.sectionTitle}>{t.board}</Text>
               <View style={styles.iconRow}>
-                <Pressable onPress={() => setView('calendar')} style={styles.iconBtn}>
+                <Pressable
+                  onPress={() => setView('calendar')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.calendarTitle}
+                  style={styles.iconBtn}
+                >
                   <Calendar color={theme.electricBlue} size={16} />
                 </Pressable>
                 <Pressable
@@ -252,7 +283,7 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 >
                   <HelpCircle color={theme.electricBlue} size={16} />
                 </Pressable>
-                <Pressable style={styles.iconBtn}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Ajustes" style={styles.iconBtn}>
                   <Settings color={theme.gray600} size={16} />
                 </Pressable>
               </View>
@@ -279,7 +310,12 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                       <Text style={styles.sizeChipTxt}>{r.size}</Text>
                     </View>
                   </View>
-                  <Pressable onPress={() => handleConfirmRoute(r)} style={styles.confirmBtn}>
+                  <Pressable
+                    onPress={() => handleConfirmRoute(r)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.confirm}
+                    style={styles.confirmBtn}
+                  >
                     <Check color="#fff" size={16} />
                     <Text style={styles.confirmBtnTxt}>{t.confirm}</Text>
                   </Pressable>
@@ -291,7 +327,12 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
         {view === 'calendar' && (
           <View style={styles.calWrap}>
             <View style={styles.calHeader}>
-              <Pressable onPress={() => setView('board')} style={styles.iconBtn}>
+              <Pressable
+                onPress={() => setView('board')}
+                accessibilityRole="button"
+                accessibilityLabel="Volver al tablón"
+                style={styles.iconBtn}
+              >
                 <ChevronLeft color={theme.white} size={20} />
               </Pressable>
               <Text style={styles.calTitle}>{t.calendarTitle}</Text>
@@ -302,6 +343,8 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 onPress={() =>
                   setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))
                 }
+                accessibilityRole="button"
+                accessibilityLabel="Mes anterior"
               >
                 <ChevronLeft color={theme.gray500} size={24} />
               </Pressable>
@@ -315,6 +358,8 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 onPress={() =>
                   setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))
                 }
+                accessibilityRole="button"
+                accessibilityLabel="Mes siguiente"
               >
                 <ChevronRightIcon color={theme.gray500} size={24} />
               </Pressable>
@@ -340,6 +385,9 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                   <Pressable
                     key={day}
                     onPress={() => setSelectedDay(day)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Día ${day}`}
+                    accessibilityState={{ selected: isSel }}
                     style={[
                       styles.dayBtn,
                       isSel && styles.dayBtnSel,
@@ -388,6 +436,8 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 setShowSuccessModal(false);
                 setView('calendar');
               }}
+              accessibilityRole="button"
+              accessibilityLabel={t.calendarTitle}
               style={styles.successCta}
             >
               <Text style={styles.successCtaTxt}>VEURE AGENDA</Text>
@@ -424,11 +474,21 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 </View>
               </View>
               <View style={styles.notifActions}>
-                <Pressable onPress={() => setShowNotification(false)} style={styles.rejectBtn}>
+                <Pressable
+                  onPress={() => setShowNotification(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.reject}
+                  style={styles.rejectBtn}
+                >
                   <X color={theme.gray500} size={16} />
                   <Text style={styles.rejectTxt}>{t.reject}</Text>
                 </Pressable>
-                <Pressable onPress={() => setShowNotification(false)} style={styles.acceptBtn}>
+                <Pressable
+                  onPress={() => setShowNotification(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.accept}
+                  style={styles.acceptBtn}
+                >
                   <Check color="#fff" size={16} />
                   <Text style={styles.acceptTxt}>{t.accept}</Text>
                 </Pressable>
@@ -444,11 +504,7 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
 function RadarRipple() {
   const s = useSharedValue(0.5);
   useEffect(() => {
-    s.value = withRepeat(
-      withTiming(2.5, { duration: 2000, easing: Easing.out(Easing.ease) }),
-      -1,
-      false
-    );
+    s.value = withRepeat(withTiming(2.5, { duration: 2000, easing: Easing.out(Easing.ease) }), -1, false);
   }, [s]);
   const ringStyle = useAnimatedStyle(() => ({
     transform: [{ scale: s.value }],
@@ -528,7 +584,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileMeta: { fontSize: 9, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase' },
+  profileMeta: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   profileName: { fontSize: 14, fontWeight: '900', color: theme.white },
   powerBtn: {
     flexDirection: 'row',
@@ -558,15 +620,49 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   sheetContent: { padding: 32, paddingBottom: 48 },
-  handle: { width: 48, height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, alignSelf: 'center', marginBottom: 24 },
-  tabs: { flexDirection: 'row', backgroundColor: theme.surfaceDark, padding: 6, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
+  handle: {
+    width: 48,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: theme.surfaceDark,
+    padding: 6,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
   tabActive: { backgroundColor: theme.electricBlue },
   tabTxt: { fontSize: 10, fontWeight: '900', letterSpacing: 2, color: theme.gray600 },
   tabTxtActive: { color: '#fff' },
   section: { gap: 20 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4 },
-  sectionTitle: { fontSize: 11, fontWeight: '900', color: theme.gray500, letterSpacing: 2, textTransform: 'uppercase' },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: theme.gray500,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   linkOut: { fontSize: 10, fontWeight: '900', color: theme.gray700 },
   statsRow: { flexDirection: 'row', gap: 16 },
   statCard: {
@@ -577,8 +673,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  statLabel: { fontSize: 9, fontWeight: '900', color: theme.electricBlue, marginBottom: 6, letterSpacing: 2, textTransform: 'uppercase' },
-  statLabelMuted: { fontSize: 9, fontWeight: '900', color: theme.gray600, marginBottom: 6, letterSpacing: 2, textTransform: 'uppercase' },
+  statLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.electricBlue,
+    marginBottom: 6,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  statLabelMuted: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.gray600,
+    marginBottom: 6,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   statVal: { fontSize: 28, fontWeight: '900', color: theme.white },
   nextMission: {
     padding: 22,
@@ -587,11 +697,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(48,112,240,0.2)',
   },
-  nextMissionLbl: { fontSize: 9, fontWeight: '900', color: theme.electricBlue, letterSpacing: 2, marginBottom: 14, textTransform: 'uppercase' },
+  nextMissionLbl: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.electricBlue,
+    letterSpacing: 2,
+    marginBottom: 14,
+    textTransform: 'uppercase',
+  },
   nextMissionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   routeMain: { fontWeight: '700', color: theme.white, fontSize: 16 },
   routeSub: { fontSize: 12, color: theme.gray500, fontWeight: '700', marginTop: 4 },
-  clockBox: { backgroundColor: theme.surfaceDark, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  clockBox: {
+    backgroundColor: theme.surfaceDark,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
   demandCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -614,7 +737,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   demandTitle: { fontSize: 14, fontWeight: '900', color: theme.white },
-  demandSub: { fontSize: 10, color: theme.gray600, fontWeight: '700', textTransform: 'uppercase', marginTop: 4 },
+  demandSub: {
+    fontSize: 10,
+    color: theme.gray600,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
   iconRow: { flexDirection: 'row', gap: 8 },
   iconBtn: {
     padding: 10,
@@ -670,12 +799,36 @@ const styles = StyleSheet.create({
   },
   confirmBtnTxt: { color: '#fff', fontWeight: '900', fontSize: 10, letterSpacing: 3 },
   calWrap: { paddingBottom: 24 },
-  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  calTitle: { fontSize: 16, fontWeight: '900', color: theme.white, textTransform: 'uppercase', letterSpacing: 2 },
-  monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingHorizontal: 8 },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  calTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: theme.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  monthRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
   monthTxt: { fontSize: 14, fontWeight: '900', color: theme.electricBlue, textTransform: 'capitalize' },
   dowRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  dowCell: { flex: 1, textAlign: 'center', fontSize: 9, fontWeight: '900', color: theme.gray700, paddingBottom: 8 },
+  dowCell: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.gray700,
+    paddingBottom: 8,
+  },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 24 },
   dayCellEmpty: { width: '14.28%', height: 44 },
   dayBtn: {
@@ -692,8 +845,23 @@ const styles = StyleSheet.create({
   dayBtnSel: { backgroundColor: theme.electricBlue, borderColor: theme.electricBlue },
   dayBtnToday: { backgroundColor: 'rgba(48,112,240,0.05)', borderColor: 'rgba(48,112,240,0.3)' },
   dayBtnTxt: { fontSize: 12, fontWeight: '900', color: theme.gray500 },
-  dotMission: { position: 'absolute', bottom: 6, width: 4, height: 4, borderRadius: 2, backgroundColor: theme.electricBlue },
-  missionsHdr: { fontSize: 10, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, paddingHorizontal: 4 },
+  dotMission: {
+    position: 'absolute',
+    bottom: 6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.electricBlue,
+  },
+  missionsHdr: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
   missionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -715,9 +883,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   missionRoute: { fontSize: 12, fontWeight: '900', color: theme.white },
-  missionDate: { fontSize: 10, color: theme.gray600, fontWeight: '700', textTransform: 'uppercase', marginTop: 4 },
+  missionDate: {
+    fontSize: 10,
+    color: theme.gray600,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
   missionPrice: { fontSize: 14, fontWeight: '900', color: theme.success },
-  noMissions: { textAlign: 'center', paddingVertical: 36, color: theme.gray700, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 },
+  noMissions: {
+    textAlign: 'center',
+    paddingVertical: 36,
+    color: theme.gray700,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.8)',
@@ -745,7 +926,14 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   successTitle: { fontSize: 24, fontWeight: '900', color: theme.white, marginBottom: 10 },
-  successSub: { color: theme.gray500, fontWeight: '700', fontSize: 13, textAlign: 'center', marginBottom: 28, textTransform: 'uppercase' },
+  successSub: {
+    color: theme.gray500,
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 28,
+    textTransform: 'uppercase',
+  },
   successCta: {
     width: '100%',
     paddingVertical: 18,
@@ -757,10 +945,23 @@ const styles = StyleSheet.create({
   notifWrap: { flex: 1, justifyContent: 'flex-end', padding: 24, backgroundColor: 'rgba(0,0,0,0.4)' },
   notifCard: { borderRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   notifTop: { backgroundColor: theme.electricBlue, padding: 36, paddingTop: 48 },
-  bellBadge: { position: 'absolute', top: 22, right: 22, backgroundColor: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 999 },
+  bellBadge: {
+    position: 'absolute',
+    top: 22,
+    right: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 10,
+    borderRadius: 999,
+  },
   notifTitle: { fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 10 },
   notifLoc: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  notifLocTxt: { fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.7)', letterSpacing: 2, textTransform: 'uppercase' },
+  notifLocTxt: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   notifBody: { backgroundColor: theme.surfaceDark, padding: 28 },
   notifRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
   pkgIcon: {
@@ -773,7 +974,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  pkgMeta: { fontSize: 9, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase' },
+  pkgMeta: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   pkgStreet: { fontSize: 18, fontWeight: '900', color: theme.white },
   pkgMoney: { fontSize: 22, fontWeight: '900', color: theme.success },
   notifActions: { flexDirection: 'row', gap: 12 },

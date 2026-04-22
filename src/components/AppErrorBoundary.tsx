@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { theme } from '../theme';
+import { captureException } from '../services/monitoring/sentry';
 
 interface Props {
   children: ReactNode;
@@ -22,6 +23,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (__DEV__) {
       console.error('[AppErrorBoundary]', error, info.componentStack);
     }
+    captureException(error, { componentStack: info.componentStack });
   }
 
   private handleRetry = (): void => {
@@ -35,8 +37,8 @@ export class AppErrorBoundary extends Component<Props, State> {
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>Algo ha ido mal</Text>
             <Text style={styles.body}>
-              La app ha encontrado un error inesperado. Puedes intentar continuar; si el problema persiste, reinicia la
-              aplicación.
+              La app ha encontrado un error inesperado. Puedes intentar continuar; si el problema persiste,
+              reinicia la aplicación.
             </Text>
             {__DEV__ ? <Text style={styles.debug}>{this.state.message}</Text> : null}
             <Pressable

@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { User, Truck, ChevronLeft } from 'lucide-react-native';
+import { User, Truck, ChevronLeft, LogOut } from 'lucide-react-native';
 import { UserProfile, Language } from '../../shared/types';
 import { theme } from '../theme';
+import { useT } from '../i18n/useT';
+import { useAppStore } from '../store/appStore';
+import { signOutUser } from '../services/firebase/auth';
 
 interface Props {
   lang: Language;
@@ -11,45 +14,34 @@ interface Props {
   onLegalHelp: () => void;
 }
 
-const copy = {
-  ca: {
-    question: "¿Com utilitzaràs l'app?",
-    client: 'SOC CLIENT',
-    carrier: 'SOC TRANSPORTISTA',
-    clientDesc: 'Vull enviar paquets',
-    carrierDesc: 'Vull realitzar enviaments',
-  },
-  es: {
-    question: '¿Cómo vas a usar la app?',
-    client: 'Soy Cliente',
-    carrier: 'Soy Transportista',
-    clientDesc: 'Quiero enviar paquetes',
-    carrierDesc: 'Quiero realizar envíos',
-  },
-  en: {
-    question: 'How will you use the app?',
-    client: "I'm a Customer",
-    carrier: "I'm a Carrier",
-    clientDesc: 'I want to send packages',
-    carrierDesc: 'I want to fulfill deliveries',
-  },
-} as const;
+export default function ProfileSelection({ onSelect, onBack, onLegalHelp }: Props) {
+  const tr = useT();
+  const user = useAppStore((s) => s.user);
+  const clearUser = useAppStore((s) => s.clearUser);
 
-const legalLink = {
-  ca: 'Legal i ajuda',
-  es: 'Legal y ayuda',
-  en: 'Legal & help',
-} as const;
-
-export default function ProfileSelection({ lang, onSelect, onBack, onLegalHelp }: Props) {
-  const t = copy[lang];
+  const onSignOut = async () => {
+    try {
+      await signOutUser();
+    } finally {
+      // Si Firebase no estaba activo, igual reseteamos el store local.
+      clearUser();
+    }
+  };
+  const t = {
+    question: tr('profile.question'),
+    client: tr('profile.client'),
+    carrier: tr('profile.carrier'),
+    clientDesc: tr('profile.clientDesc'),
+    carrierDesc: tr('profile.carrierDesc'),
+  };
+  const legalLabel = tr('profile.legalLink');
 
   return (
     <View style={styles.root}>
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel="Volver"
+        accessibilityLabel={tr('common.back')}
         style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.85 }]}
       >
         <ChevronLeft color={theme.white} size={24} />
@@ -89,11 +81,25 @@ export default function ProfileSelection({ lang, onSelect, onBack, onLegalHelp }
         <Pressable
           onPress={onLegalHelp}
           accessibilityRole="button"
-          accessibilityLabel={legalLink[lang]}
+          accessibilityLabel={legalLabel}
           style={({ pressed }) => [styles.legalLink, pressed && { opacity: 0.85 }]}
         >
-          <Text style={styles.legalLinkTxt}>{legalLink[lang]}</Text>
+          <Text style={styles.legalLinkTxt}>{legalLabel}</Text>
         </Pressable>
+
+        {user && (
+          <Pressable
+            onPress={onSignOut}
+            accessibilityRole="button"
+            accessibilityLabel={tr('profile.signOut')}
+            style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.85 }]}
+          >
+            <LogOut color={theme.gray500} size={16} />
+            <Text style={styles.signOutTxt}>
+              {user.displayName ? `${tr('profile.signOut')} · ${user.displayName}` : tr('profile.signOut')}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -152,4 +158,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 20, fontWeight: '900', color: theme.white },
   cardDesc: { marginTop: 8, color: theme.gray500, fontSize: 14, fontWeight: '500' },
+  signOutBtn: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  signOutTxt: { color: theme.gray500, fontSize: 12, fontWeight: '600' },
 });

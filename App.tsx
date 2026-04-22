@@ -1,60 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useAuthSync } from './src/hooks/useAuthSync';
+import { initSentry, wrapRootComponent } from './src/services/monitoring/sentry';
+import './src/i18n'; // inicializa i18n-js y sincroniza con el store
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import LanguageOnboarding from './src/components/LanguageOnboarding';
+import Login from './src/components/Login';
 import ProfileSelection from './src/components/ProfileSelection';
 import ClientHome from './src/components/ClientHome';
 import CarrierRegistration from './src/components/CarrierRegistration';
 import CarrierHome from './src/components/CarrierHome';
 import LegalHelp from './src/components/LegalHelp';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
-import { Language, UserProfile, AppState, CarrierData } from './shared/types';
 import { theme } from './src/theme';
+import { useAppStore } from './src/store/appStore';
 
-export default function App() {
-  const [state, setState] = useState<AppState>({
-    lang: 'es',
-    profile: null,
-    step: 'onboarding',
-  });
+function App() {
+  useAuthSync();
 
-  const handleLangSelect = (lang: Language) => {
-    setState((prev) => ({ ...prev, lang, step: 'profile' }));
-  };
+  useEffect(() => {
+    initSentry();
+  }, []);
 
-  const handleProfileSelect = (profile: UserProfile) => {
-    if (profile === 'carrier') {
-      setState((prev) => ({ ...prev, profile, step: 'carrier-registration' }));
-    } else {
-      setState((prev) => ({ ...prev, profile, step: 'home' }));
-    }
-  };
+  const lang = useAppStore((s) => s.lang);
+  const step = useAppStore((s) => s.step);
+  const carrierData = useAppStore((s) => s.carrierData);
 
-  const handleCarrierRegistration = (data: CarrierData) => {
-    setState((prev) => ({ ...prev, carrierData: data, step: 'carrier-dashboard' }));
-  };
-
-  const handleStepChange = (step: AppState['step']) => {
-    setState((prev) => ({ ...prev, step }));
-  };
-
-  const openLegalHelp = () => {
-    setState((prev) => {
-      if (prev.step === 'legal-help') return prev;
-      return { ...prev, legalReturnStep: prev.step, step: 'legal-help' };
-    });
-  };
-
-  const closeLegalHelp = () => {
-    setState((prev) => ({
-      ...prev,
-      step: prev.legalReturnStep ?? 'profile',
-      legalReturnStep: undefined,
-    }));
-  };
+  const setLang = useAppStore((s) => s.setLang);
+  const selectProfile = useAppStore((s) => s.selectProfile);
+  const setCarrierData = useAppStore((s) => s.setCarrierData);
+  const setStep = useAppStore((s) => s.setStep);
+  const openLegalHelp = useAppStore((s) => s.openLegalHelp);
+  const closeLegalHelp = useAppStore((s) => s.closeLegalHelp);
 
   return (
     <GestureHandlerRootView style={styles.gesture}>
@@ -63,42 +43,44 @@ export default function App() {
           <StatusBar style="light" />
           <AppErrorBoundary>
             <View style={styles.root}>
-              {state.step === 'legal-help' && <LegalHelp lang={state.lang} onBack={closeLegalHelp} />}
+              {step === 'legal-help' && <LegalHelp lang={lang} onBack={closeLegalHelp} />}
 
-              {state.step === 'onboarding' && <LanguageOnboarding onSelect={handleLangSelect} />}
+              {step === 'onboarding' && <LanguageOnboarding onSelect={setLang} />}
 
-              {state.step === 'profile' && (
+              {step === 'login' && <Login onBack={() => setStep('onboarding')} onLegalHelp={openLegalHelp} />}
+
+              {step === 'profile' && (
                 <ProfileSelection
-                  lang={state.lang}
-                  onSelect={handleProfileSelect}
-                  onBack={() => handleStepChange('onboarding')}
+                  lang={lang}
+                  onSelect={selectProfile}
+                  onBack={() => setStep('login')}
                   onLegalHelp={openLegalHelp}
                 />
               )}
 
-              {state.step === 'carrier-registration' && (
+              {step === 'carrier-registration' && (
                 <CarrierRegistration
-                  lang={state.lang}
-                  onComplete={handleCarrierRegistration}
-                  onBack={() => handleStepChange('profile')}
+                  lang={lang}
+                  onComplete={setCarrierData}
+                  onBack={() => setStep('profile')}
                 />
               )}
 
-              {state.step === 'carrier-dashboard' && state.carrierData && (
+              {step === 'carrier-dashboard' && carrierData && (
                 <CarrierHome
-                  lang={state.lang}
-                  carrier={state.carrierData}
-                  onExit={() => handleStepChange('profile')}
+                  lang={lang}
+                  carrier={carrierData}
+                  onExit={() => setStep('profile')}
                   onOpenLegalHelp={openLegalHelp}
                 />
               )}
 
-              {(state.step === 'home' || state.step === 'tracking' || state.step === 'reservation-confirmed') && (
+              {(step === 'home' || step === 'tracking' || step === 'reservation-confirmed') && (
                 <ClientHome
-                  lang={state.lang}
-                  step={state.step}
-                  onStepChange={handleStepChange}
-                  onBack={() => handleStepChange('profile')}
+                  lang={lang}
+                  step={step}
+                  onStepChange={setStep}
+                  onBack={() => setStep('profile')}
                   onOpenLegalHelp={openLegalHelp}
                 />
               )}
@@ -115,3 +97,5 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.bgRoot },
   root: { flex: 1, backgroundColor: theme.bgRoot },
 });
+
+export default wrapRootComponent(App);

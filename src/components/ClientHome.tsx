@@ -51,6 +51,46 @@ interface Props {
 
 const legalA11y = { ca: 'Legal i ajuda', es: 'Legal y ayuda', en: 'Legal & help' } as const;
 
+interface SizeButtonsProps {
+  selected: PackageSize;
+  onSelect: (s: PackageSize) => void;
+  onScan: () => void;
+}
+
+/**
+ * Selector de tamaño (chips XS/S/M/H) memoizado a nivel de módulo.
+ * Se declara fuera de `ClientHome` para no recrearse en cada render y permitir
+ * que `React.memo` sólo rerenderice cuando cambian `selected`, `onSelect` u `onScan`.
+ */
+const SizeButtons = React.memo(function SizeButtons({ selected, onSelect, onScan }: SizeButtonsProps) {
+  return (
+    <View style={styles.sizeRow}>
+      <View style={styles.sizeInner}>
+        {(['XS', 'S', 'M', 'H'] as PackageSize[]).map((s) => (
+          <Pressable
+            key={s}
+            onPress={() => onSelect(s)}
+            accessibilityRole="button"
+            accessibilityLabel={`Tamaño ${s}`}
+            accessibilityState={{ selected: selected === s }}
+            style={[styles.sizeChip, selected === s && styles.sizeChipOn]}
+          >
+            <Text style={[styles.sizeChipTxt, selected === s && { color: '#fff' }]}>{s}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable
+        onPress={onScan}
+        accessibilityRole="button"
+        accessibilityLabel="Escanear paquete con cámara"
+        style={styles.camBtn}
+      >
+        <Camera color={theme.gray500} size={22} />
+      </Pressable>
+    </View>
+  );
+});
+
 export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLegalHelp }: Props) {
   const [origin, setOrigin] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>('express');
@@ -110,39 +150,29 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
       .toUpperCase();
   };
 
-  const timeSlots = ['08:00-10:00', '10:00-12:00', '12:00-14:00', '14:00-16:00', '16:00-18:00', '18:00-20:00', '20:00-22:00'];
+  const timeSlots = [
+    '08:00-10:00',
+    '10:00-12:00',
+    '12:00-14:00',
+    '14:00-16:00',
+    '16:00-18:00',
+    '18:00-20:00',
+    '20:00-22:00',
+  ];
 
   const mapH = step === 'home' ? WIN_H * 0.22 : WIN_H * 0.38;
 
-  const SizeButtons = ({
-    selected,
-    onSelect,
-    onScan,
-  }: {
-    selected: PackageSize;
-    onSelect: (s: PackageSize) => void;
-    onScan: () => void;
-  }) => (
-    <View style={styles.sizeRow}>
-      <View style={styles.sizeInner}>
-        {(['XS', 'S', 'M', 'H'] as PackageSize[]).map((s) => (
-          <Pressable
-            key={s}
-            onPress={() => {
-              onSelect(s);
-              setShowPrice(false);
-            }}
-            style={[styles.sizeChip, selected === s && styles.sizeChipOn]}
-          >
-            <Text style={[styles.sizeChipTxt, selected === s && { color: '#fff' }]}>{s}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Pressable onPress={onScan} style={styles.camBtn}>
-        <Camera color={theme.gray500} size={22} />
-      </Pressable>
-    </View>
-  );
+  // Los consumidores de `SizeButtons` envuelven `onSelect` para cerrar el
+  // panel de precio (`setShowPrice(false)`) si corresponde. Ver usos más abajo.
+  const onSelectExpressSize = useCallback((s: PackageSize) => {
+    setExpressSize(s);
+    setShowPrice(false);
+  }, []);
+
+  const onSelectPkgSize = useCallback((id: string, s: PackageSize) => {
+    setPackages((prev) => prev.map((p) => (p.id === id ? { ...p, size: s } : p)));
+    setShowPrice(false);
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -174,7 +204,11 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
             <Text style={styles.matchTitle}>¡Ahorro Colectivo Aplicado!</Text>
             <Text style={styles.matchSub}>Alguien se ha unido a tu ruta</Text>
           </View>
-          <Pressable onPress={() => setShowMatchNotification(false)}>
+          <Pressable
+            onPress={() => setShowMatchNotification(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar notificación"
+          >
             <X color={theme.gray500} size={18} />
           </Pressable>
         </View>
@@ -228,7 +262,11 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
       </View>
 
       {step === 'home' ? (
-        <ScrollView style={styles.sheet} contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.sheet}
+          contentContainerStyle={styles.sheetContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.handle} />
           <View style={styles.modeTabs}>
             <Pressable
@@ -236,6 +274,9 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 setServiceType('express');
                 setShowPrice(false);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Modo express"
+              accessibilityState={{ selected: serviceType === 'express' }}
               style={[styles.modeTab, serviceType === 'express' && styles.modeTabOn]}
             >
               <Zap color={serviceType === 'express' ? '#fff' : theme.gray500} size={16} />
@@ -246,10 +287,15 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 setServiceType('programmed');
                 setShowPrice(false);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Modo programado"
+              accessibilityState={{ selected: serviceType === 'programmed' }}
               style={[styles.modeTab, serviceType === 'programmed' && styles.modeTabOn]}
             >
               <Package color={serviceType === 'programmed' ? '#fff' : theme.gray500} size={16} />
-              <Text style={[styles.modeTabTxt, serviceType === 'programmed' && { color: '#fff' }]}>PROGRAMAR</Text>
+              <Text style={[styles.modeTabTxt, serviceType === 'programmed' && { color: '#fff' }]}>
+                PROGRAMAR
+              </Text>
             </Pressable>
           </View>
 
@@ -281,21 +327,34 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 <Search color={theme.gray700} size={16} />
               </View>
               <Text style={styles.fieldLbl}>Volumen de Carga</Text>
-              <SizeButtons selected={expressSize} onSelect={setExpressSize} onScan={() => handleAIScan('express')} />
+              <SizeButtons
+                selected={expressSize}
+                onSelect={onSelectExpressSize}
+                onScan={() => handleAIScan('express')}
+              />
             </View>
           ) : (
             <View style={{ gap: 22 }}>
               <Text style={styles.fieldLbl}>Agenda de Recogida</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysScroll}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.daysScroll}
+              >
                 {[0, 1, 2, 3, 4, 5, 6].map((offset) => {
                   const parts = getDayLabel(offset).split(' ');
                   return (
                     <Pressable
                       key={offset}
                       onPress={() => setSelectedDate(offset)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Día ${getDayLabel(offset)}`}
+                      accessibilityState={{ selected: selectedDate === offset }}
                       style={[styles.dayPill, selectedDate === offset && styles.dayPillOn]}
                     >
-                      <Text style={[styles.dayPillSm, selectedDate === offset && { color: '#fff' }]}>{parts[0]}</Text>
+                      <Text style={[styles.dayPillSm, selectedDate === offset && { color: '#fff' }]}>
+                        {parts[0]}
+                      </Text>
                       <Text style={[styles.dayPillLg, selectedDate === offset && { color: '#fff' }]}>
                         {parts[1]} {parts[2]}
                       </Text>
@@ -308,9 +367,14 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                   <Pressable
                     key={slot}
                     onPress={() => setSelectedSlot(slot)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Franja horaria ${slot}`}
+                    accessibilityState={{ selected: selectedSlot === slot }}
                     style={[styles.slotBtn, selectedSlot === slot && styles.slotBtnOn]}
                   >
-                    <Text style={[styles.slotTxt, selectedSlot === slot && { color: theme.electricBlue }]}>{slot}</Text>
+                    <Text style={[styles.slotTxt, selectedSlot === slot && { color: theme.electricBlue }]}>
+                      {slot}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -322,7 +386,11 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                       <Text style={styles.stopNumTxt}>{idx + 1}</Text>
                     </View>
                     <Text style={styles.stopTitle}>Parada {idx + 1}</Text>
-                    <Pressable onPress={() => setPackages(packages.filter((p) => p.id !== pkg.id))}>
+                    <Pressable
+                      onPress={() => setPackages(packages.filter((p) => p.id !== pkg.id))}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Eliminar parada ${idx + 1}`}
+                    >
                       <Trash2 color={theme.gray800} size={18} />
                     </Pressable>
                   </View>
@@ -341,7 +409,7 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                   <Text style={styles.dimLbl}>Dimensiones del bulto</Text>
                   <SizeButtons
                     selected={pkg.size}
-                    onSelect={(s) => setPackages(packages.map((p) => (p.id === pkg.id ? { ...p, size: s } : p)))}
+                    onSelect={(s) => onSelectPkgSize(pkg.id, s)}
                     onScan={() => handleAIScan(pkg.id)}
                   />
                 </View>
@@ -350,6 +418,8 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 onPress={() =>
                   setPackages([...packages, { id: Math.random().toString(), size: 'S', destination: '' }])
                 }
+                accessibilityRole="button"
+                accessibilityLabel="Añadir parada"
                 style={styles.addStop}
               >
                 <Text style={styles.addStopTxt}>+ Añadir Parada</Text>
@@ -362,6 +432,9 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
               setIsOpenRouteEnabled(!isOpenRouteEnabled);
               setShowPrice(false);
             }}
+            accessibilityRole="switch"
+            accessibilityLabel="Modo Open Route"
+            accessibilityState={{ checked: isOpenRouteEnabled }}
             style={[styles.openRow, isOpenRouteEnabled && styles.openRowOn]}
           >
             <View style={styles.openLeft}>
@@ -404,9 +477,7 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
             <View style={styles.priceCard}>
               <View style={styles.priceRow}>
                 <View>
-                  <Text style={styles.priceMeta}>
-                    {priceResult.count} Bultos • Resumen Misión
-                  </Text>
+                  <Text style={styles.priceMeta}>{priceResult.count} Bultos • Resumen Misión</Text>
                   <Text style={styles.priceHuge}>
                     {isOpenRouteEnabled ? priceResult.full : priceResult.final}€
                   </Text>
@@ -431,6 +502,8 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
               </View>
               <Pressable
                 onPress={() => onStepChange(serviceType === 'express' ? 'tracking' : 'reservation-confirmed')}
+                accessibilityRole="button"
+                accessibilityLabel="Confirmar misión"
                 style={styles.confirmWhite}
               >
                 <Text style={styles.confirmWhiteTxt}>Confirmar Misión</Text>
@@ -447,7 +520,9 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 <View style={styles.driverTop}>
                   <View style={styles.driverRow}>
                     <Image
-                      source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop' }}
+                      source={{
+                        uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop',
+                      }}
                       style={styles.driverImg}
                       contentFit="cover"
                     />
@@ -460,7 +535,11 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                       </View>
                     </View>
                   </View>
-                  <Pressable style={styles.phoneBtn}>
+                  <Pressable
+                    style={styles.phoneBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Llamar al transportista"
+                  >
                     <Phone color={theme.electricBlue} size={28} />
                   </Pressable>
                 </View>
@@ -514,6 +593,8 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                   onStepChange('home');
                   setHasSimulatedMatch(false);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar misión"
                 style={styles.cancelMission}
               >
                 <Text style={styles.cancelMissionTxt}>Cancelar Misión</Text>
@@ -603,7 +684,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scanResultTxt: { color: '#fff', fontWeight: '900', fontSize: 12 },
-  scanningTxt: { color: '#fff', fontWeight: '900', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' },
+  scanningTxt: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   matchBanner: {
     position: 'absolute',
     top: 48,
@@ -628,7 +715,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   matchTitle: { fontSize: 12, fontWeight: '900', color: theme.white },
-  matchSub: { fontSize: 10, fontWeight: '700', color: theme.electricBlue, marginTop: 2, textTransform: 'uppercase' },
+  matchSub: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.electricBlue,
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
   mapWrap: { position: 'relative' },
   backFloating: {
     position: 'absolute',
@@ -676,7 +769,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(48,112,240,0.4)',
   },
-  simTxt: { color: theme.white, fontSize: 10, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' },
+  simTxt: {
+    color: theme.white,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   sheet: {
     flex: 1,
     backgroundColor: theme.deepNight,
@@ -819,7 +918,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stopNumTxt: { fontWeight: '900', color: theme.electricBlue, fontSize: 12 },
-  stopTitle: { flex: 1, marginLeft: 10, fontSize: 10, fontWeight: '900', color: theme.white, letterSpacing: 2, textTransform: 'uppercase' },
+  stopTitle: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.white,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   stopInput: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -830,7 +937,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  dimLbl: { fontSize: 9, fontWeight: '900', color: theme.gray700, letterSpacing: 2, textTransform: 'uppercase' },
+  dimLbl: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: theme.gray700,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   addStop: {
     paddingVertical: 18,
     borderWidth: 2,
@@ -839,7 +952,13 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
   },
-  addStopTxt: { fontSize: 10, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase' },
+  addStopTxt: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   openRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -863,7 +982,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   openTitle: { fontSize: 11, fontWeight: '900', color: theme.gray500 },
-  openSub: { fontSize: 10, color: theme.gray600, fontWeight: '700', textTransform: 'uppercase', marginTop: 4 },
+  openSub: {
+    fontSize: 10,
+    color: theme.gray600,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
   checkOuter: {
     width: 24,
     height: 24,
@@ -889,8 +1014,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22 },
-  priceMeta: { fontSize: 10, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase' },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 22,
+  },
+  priceMeta: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   priceHuge: { fontSize: 52, fontWeight: '900', color: theme.white },
   saveLbl: { fontSize: 10, fontWeight: '900', color: theme.electricBlue, textTransform: 'uppercase' },
   saveVal: { fontSize: 24, fontWeight: '900', color: theme.electricBlue },
@@ -913,7 +1049,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  citaMeta: { fontSize: 10, fontWeight: '900', color: theme.gray600, letterSpacing: 2, textTransform: 'uppercase' },
+  citaMeta: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray600,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   citaVal: { fontSize: 12, fontWeight: '900', color: theme.white, textTransform: 'uppercase' },
   confirmWhite: {
     backgroundColor: theme.white,
@@ -921,7 +1063,13 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
   },
-  confirmWhiteTxt: { color: theme.deepNight, fontWeight: '900', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase' },
+  confirmWhiteTxt: {
+    color: theme.deepNight,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
   driverCard: {
     backgroundColor: theme.surfaceDark,
     borderRadius: 48,
@@ -929,11 +1077,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  driverTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 },
+  driverTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 28,
+  },
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: 18, flex: 1 },
   driverImg: { width: 80, height: 80, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(48,112,240,0.3)' },
   driverName: { fontSize: 24, fontWeight: '900', color: theme.white },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: 'rgba(48,112,240,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start' },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    backgroundColor: 'rgba(48,112,240,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
   ratingTxt: { fontSize: 12, fontWeight: '900', color: theme.electricBlue },
   ratingCnt: { fontSize: 10, fontWeight: '700', color: theme.gray700 },
   phoneBtn: {
@@ -946,7 +1109,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  driverStats: { flexDirection: 'row', gap: 20, paddingTop: 22, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  driverStats: {
+    flexDirection: 'row',
+    gap: 20,
+    paddingTop: 22,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
   dStat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   dStatIcon: {
     width: 48,
@@ -958,7 +1127,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  dStatLbl: { fontSize: 10, fontWeight: '900', color: theme.gray700, letterSpacing: 2, textTransform: 'uppercase' },
+  dStatLbl: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray700,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   dStatVal: { fontSize: 14, fontWeight: '900', color: theme.white, marginTop: 2 },
   finalCard: {
     backgroundColor: theme.surfaceDark,
@@ -968,7 +1143,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   finalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  finalMeta: { fontSize: 10, fontWeight: '900', color: theme.gray700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
+  finalMeta: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray700,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
   priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: 14 },
   finalPrice: { fontSize: 44, fontWeight: '900', color: theme.electricBlue },
   strike: { fontSize: 20, fontWeight: '700', color: theme.gray800, textDecorationLine: 'line-through' },
@@ -981,9 +1163,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(48,112,240,0.2)',
   },
-  matchOkTxt: { fontSize: 10, fontWeight: '900', color: theme.electricBlue, marginTop: 4, letterSpacing: 2, textTransform: 'uppercase' },
+  matchOkTxt: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.electricBlue,
+    marginTop: 4,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   finalDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 20 },
-  finalCitaLbl: { fontSize: 10, fontWeight: '900', color: theme.gray700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  finalCitaLbl: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: theme.gray700,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
   finalCitaVal: { fontSize: 14, fontWeight: '900', color: theme.white, textTransform: 'uppercase' },
   cancelMission: {
     paddingVertical: 20,
@@ -994,8 +1190,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  cancelMissionTxt: { color: theme.gray600, fontWeight: '900', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase' },
+  cancelMissionTxt: {
+    color: theme.gray600,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
   waiting: { alignItems: 'center', paddingVertical: 48 },
-  waitingTitle: { fontSize: 26, fontWeight: '900', color: theme.white, marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase' },
-  waitingSub: { textAlign: 'center', color: theme.gray700, fontWeight: '700', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 20 },
+  waitingTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: theme.white,
+    marginBottom: 12,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  waitingSub: {
+    textAlign: 'center',
+    color: theme.gray700,
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    lineHeight: 20,
+  },
 });

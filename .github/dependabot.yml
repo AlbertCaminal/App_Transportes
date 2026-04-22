@@ -1,0 +1,48 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    groups:
+      expo-sdk:
+        patterns:
+          - 'expo'
+          - 'expo-*'
+          - '@expo/*'
+      react-native:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - 'react-native'
+          - 'react-native-*'
+          - '@react-native/*'
+      testing:
+        patterns:
+          - 'jest'
+          - 'jest-*'
+          - '@testing-library/*'
+          - 'react-test-renderer'
+      lint-format:
+        patterns:
+          - 'eslint'
+          - 'eslint-*'
+          - 'prettier'
+          - 'husky'
+          - 'lint-staged'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - ci

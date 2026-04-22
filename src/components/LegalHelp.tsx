@@ -4,43 +4,12 @@ import { ChevronLeft, ExternalLink, Mail } from 'lucide-react-native';
 import { Language } from '../../shared/types';
 import { publicApp } from '../config/publicApp';
 import { theme } from '../theme';
+import { useT } from '../i18n/useT';
 
 interface Props {
   lang: Language;
   onBack: () => void;
 }
-
-const copy = {
-  ca: {
-    title: 'Legal i ajuda',
-    subtitle: 'Informació i contacte',
-    privacy: 'Política de privacitat',
-    website: 'Lloc web',
-    support: 'Correu de suport',
-    openError: "No s'ha pogut obrir l'enllaç.",
-    webNote:
-      'Al navegador, el correu pot obrir el client per defecte; si no, copia l’adreça de suport manualment.',
-  },
-  es: {
-    title: 'Legal y ayuda',
-    subtitle: 'Información y contacto',
-    privacy: 'Política de privacidad',
-    website: 'Sitio web',
-    support: 'Correo de soporte',
-    openError: 'No se pudo abrir el enlace.',
-    webNote:
-      'En el navegador, el correo puede abrir el cliente por defecto; si no, copia la dirección de soporte manualmente.',
-  },
-  en: {
-    title: 'Legal & help',
-    subtitle: 'Information and contact',
-    privacy: 'Privacy policy',
-    website: 'Website',
-    support: 'Support email',
-    openError: 'Could not open the link.',
-    webNote: 'In the browser, email may open your default client; otherwise copy the support address manually.',
-  },
-} as const;
 
 async function openUrl(url: string, errMsg: string): Promise<void> {
   try {
@@ -55,8 +24,18 @@ async function openUrl(url: string, errMsg: string): Promise<void> {
   }
 }
 
-export default function LegalHelp({ lang, onBack }: Props) {
-  const t = copy[lang];
+export default function LegalHelp({ onBack }: Props) {
+  const tr = useT();
+  const t = {
+    title: tr('legal.title'),
+    subtitle: tr('legal.subtitle'),
+    privacy: tr('legal.privacy'),
+    website: tr('legal.website'),
+    support: tr('legal.support'),
+    openError: tr('legal.openError'),
+    webNote: tr('legal.webNote'),
+  };
+  const back = tr('common.back');
   const mailto = `mailto:${publicApp.supportEmail}?subject=${encodeURIComponent(publicApp.displayName)}`;
 
   const onPrivacy = useCallback(() => openUrl(publicApp.privacyPolicyUrl, t.openError), [t.openError]);
@@ -68,7 +47,7 @@ export default function LegalHelp({ lang, onBack }: Props) {
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel={lang === 'en' ? 'Back' : 'Volver'}
+        accessibilityLabel={back}
         style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.85 }]}
       >
         <ChevronLeft color={theme.white} size={24} />

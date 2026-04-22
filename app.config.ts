@@ -51,6 +51,7 @@ export default (): ExpoConfig => {
       favicon: './assets/favicon.png',
       bundler: 'metro',
     },
+    plugins: ['expo-web-browser'],
     ...(easProjectId
       ? {
           extra: {
@@ -60,8 +61,6 @@ export default (): ExpoConfig => {
           },
         }
       : {}),
-    ...(process.env.EXPO_ACCOUNT_SLUG
-      ? { owner: process.env.EXPO_ACCOUNT_SLUG }
-      : {}),
+    ...(process.env.EXPO_ACCOUNT_SLUG ? { owner: process.env.EXPO_ACCOUNT_SLUG } : {}),
   };
 };

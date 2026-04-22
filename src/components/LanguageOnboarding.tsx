@@ -3,43 +3,52 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Globe } from 'lucide-react-native';
 import { Language } from '../../shared/types';
 import { theme } from '../theme';
+import { useT } from '../i18n/useT';
 
 interface Props {
   onSelect: (lang: Language) => void;
 }
 
 export default function LanguageOnboarding({ onSelect }: Props) {
+  const t = useT();
+
+  const langs: {
+    id: Language;
+    labelKey: 'onboarding.languages.ca' | 'onboarding.languages.es' | 'onboarding.languages.en';
+  }[] = [
+    { id: 'ca', labelKey: 'onboarding.languages.ca' },
+    { id: 'es', labelKey: 'onboarding.languages.es' },
+    { id: 'en', labelKey: 'onboarding.languages.en' },
+  ];
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
         <View style={styles.logoWrap}>
           <Globe color="#fff" size={48} />
         </View>
-        <Text style={styles.title}>Benvingut / Bienvenido</Text>
-        <Text style={styles.subtitle}>Selecciona el teu idioma / Selecciona tu idioma</Text>
+        <Text style={styles.title}>{t('onboarding.welcome')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.selectLanguage')}</Text>
       </View>
 
       <View style={styles.buttons}>
-        {(
-          [
-            { id: 'ca' as Language, label: 'Català' },
-            { id: 'es' as Language, label: 'Castellano' },
-            { id: 'en' as Language, label: 'English' },
-          ] as const
-        ).map((lang) => (
-          <Pressable
-            key={lang.id}
-            onPress={() => onSelect(lang.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`Idioma ${lang.label}`}
-            style={({ pressed }) => [styles.langBtn, pressed && styles.langBtnPressed]}
-          >
-            <Text style={styles.langBtnText}>{lang.label}</Text>
-          </Pressable>
-        ))}
+        {langs.map((lang) => {
+          const label = t(lang.labelKey);
+          return (
+            <Pressable
+              key={lang.id}
+              onPress={() => onSelect(lang.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Idioma ${label}`}
+              style={({ pressed }) => [styles.langBtn, pressed && styles.langBtnPressed]}
+            >
+              <Text style={styles.langBtnText}>{label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Text style={styles.footer}>Barcelona Logistics • v2.0</Text>
+      <Text style={styles.footer}>{t('onboarding.footer')}</Text>
     </View>
   );
 }
