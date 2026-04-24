@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/appStore';
 describe('LegalHelp (smoke)', () => {
   beforeEach(() => {
     useAppStore.getState().reset();
+    useAppStore.setState({ lang: 'es' });
   });
 
   it('renderiza el título en el idioma activo (es por defecto)', () => {

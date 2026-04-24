@@ -26,11 +26,14 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   HelpCircle,
+  User,
 } from 'lucide-react-native';
 import MapMockup from './MapMockup';
 import { getCarrierCopy } from './carrier/carrierCopy';
 import { Language, CarrierData } from '../../shared/types';
 import { theme } from '../theme';
+import { useT } from '../i18n/useT';
+import { useAppStore } from '../store/appStore';
 
 interface Route {
   id: number;
@@ -110,6 +113,8 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
   };
 
   const t = getCarrierCopy(lang);
+  const tr = useT();
+  const openAccountSettings = useAppStore((s) => s.openAccountSettings);
 
   const daysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (month: number, year: number) => new Date(year, month, 1).getDay();
@@ -157,6 +162,14 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
               </View>
             </View>
             <View style={styles.mapHeaderRight}>
+              <Pressable
+                onPress={openAccountSettings}
+                accessibilityRole="button"
+                accessibilityLabel={tr('accountSettings.title')}
+                style={({ pressed }) => [styles.helpHeaderBtn, pressed && { opacity: 0.85 }]}
+              >
+                <User color={theme.white} size={22} />
+              </Pressable>
               <Pressable
                 onPress={onOpenLegalHelp}
                 accessibilityRole="button"
@@ -283,8 +296,13 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 >
                   <HelpCircle color={theme.electricBlue} size={16} />
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel="Ajustes" style={styles.iconBtn}>
-                  <Settings color={theme.gray600} size={16} />
+                <Pressable
+                  onPress={openAccountSettings}
+                  accessibilityRole="button"
+                  accessibilityLabel={tr('accountSettings.title')}
+                  style={styles.iconBtn}
+                >
+                  <Settings color={theme.electricBlue} size={16} />
                 </Pressable>
               </View>
             </View>
@@ -336,7 +354,14 @@ export default function CarrierHome({ lang, carrier, onExit, onOpenLegalHelp }: 
                 <ChevronLeft color={theme.white} size={20} />
               </Pressable>
               <Text style={styles.calTitle}>{t.calendarTitle}</Text>
-              <View style={{ width: 44 }} />
+              <Pressable
+                onPress={openAccountSettings}
+                accessibilityRole="button"
+                accessibilityLabel={tr('accountSettings.title')}
+                style={styles.iconBtn}
+              >
+                <User color={theme.white} size={20} />
+              </Pressable>
             </View>
             <View style={styles.monthRow}>
               <Pressable

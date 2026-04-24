@@ -2,14 +2,16 @@ import React, { useEffect } from 'react';
 import { useAuthSync } from './src/hooks/useAuthSync';
 import { initSentry, wrapRootComponent } from './src/services/monitoring/sentry';
 import './src/i18n'; // inicializa i18n-js y sincroniza con el store
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import LanguageOnboarding from './src/components/LanguageOnboarding';
 import Login from './src/components/Login';
+import Register from './src/components/Register';
 import ProfileSelection from './src/components/ProfileSelection';
+import AccountSettings from './src/components/AccountSettings';
 import ClientHome from './src/components/ClientHome';
 import CarrierRegistration from './src/components/CarrierRegistration';
 import CarrierHome from './src/components/CarrierHome';
@@ -28,6 +30,7 @@ function App() {
   const lang = useAppStore((s) => s.lang);
   const step = useAppStore((s) => s.step);
   const carrierData = useAppStore((s) => s.carrierData);
+  const authInitialized = useAppStore((s) => s.authInitialized);
 
   const setLang = useAppStore((s) => s.setLang);
   const selectProfile = useAppStore((s) => s.selectProfile);
@@ -35,6 +38,21 @@ function App() {
   const setStep = useAppStore((s) => s.setStep);
   const openLegalHelp = useAppStore((s) => s.openLegalHelp);
   const closeLegalHelp = useAppStore((s) => s.closeLegalHelp);
+  const exitCarrierRegistration = useAppStore((s) => s.exitCarrierRegistration);
+  const closeAccountSettings = useAppStore((s) => s.closeAccountSettings);
+
+  if (!authInitialized) {
+    return (
+      <GestureHandlerRootView style={styles.gesture}>
+        <SafeAreaProvider>
+          <SafeAreaView style={[styles.safe, styles.authSplash]} edges={['top', 'left', 'right']}>
+            <StatusBar style="light" />
+            <ActivityIndicator size="large" color={theme.electricBlue} accessibilityLabel="Loading" />
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={styles.gesture}>
@@ -47,7 +65,17 @@ function App() {
 
               {step === 'onboarding' && <LanguageOnboarding onSelect={setLang} />}
 
-              {step === 'login' && <Login onBack={() => setStep('onboarding')} onLegalHelp={openLegalHelp} />}
+              {step === 'login' && (
+                <Login
+                  onBack={() => setStep('onboarding')}
+                  onLegalHelp={openLegalHelp}
+                  onGoToRegister={() => setStep('register')}
+                />
+              )}
+
+              {step === 'register' && (
+                <Register onBack={() => setStep('login')} onLegalHelp={openLegalHelp} />
+              )}
 
               {step === 'profile' && (
                 <ProfileSelection
@@ -58,11 +86,16 @@ function App() {
                 />
               )}
 
-              {step === 'carrier-registration' && (
+              {step === 'account-settings' && (
+                <AccountSettings onBack={closeAccountSettings} onLegalHelp={openLegalHelp} />
+              )}
+
+              {(step === 'carrier-registration' || (step === 'carrier-dashboard' && !carrierData)) && (
                 <CarrierRegistration
                   lang={lang}
+                  initialData={carrierData}
                   onComplete={setCarrierData}
-                  onBack={() => setStep('profile')}
+                  onBack={exitCarrierRegistration}
                 />
               )}
 
@@ -96,6 +129,7 @@ const styles = StyleSheet.create({
   gesture: { flex: 1 },
   safe: { flex: 1, backgroundColor: theme.bgRoot },
   root: { flex: 1, backgroundColor: theme.bgRoot },
+  authSplash: { justifyContent: 'center', alignItems: 'center' },
 });
 
 export default wrapRootComponent(App);

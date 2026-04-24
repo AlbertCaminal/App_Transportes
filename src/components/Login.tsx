@@ -1,44 +1,75 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { ChevronLeft, LogIn } from 'lucide-react-native';
 import { theme } from '../theme';
 import { useT } from '../i18n/useT';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
-import { signInAsGuest } from '../services/firebase/auth';
+import {
+  GOOGLE_AUTH_STUB,
+  shouldMountGoogleIdTokenRequest,
+  useGoogleAuthImpl,
+  type GoogleAuthState,
+} from '../hooks/useGoogleAuth';
+import { signInAsGuest, signInWithEmailPassword } from '../services/firebase/auth';
 import { isFirebaseConfigured } from '../config/firebase';
+import { firebaseAuthCodeToTranslationKey, readFirebaseAuthCode } from '../utils/firebaseAuthErrors';
 
 interface Props {
   onBack: () => void;
   onLegalHelp: () => void;
+  onGoToRegister: () => void;
 }
 
 /**
- * Pantalla de Login: ofrece "Continuar con Google" (Firebase Auth + OAuth) y
- * "Continuar como invitado" (sesión anónima de Firebase).
- *
- * El callback de éxito no se necesita aquí: cuando Firebase emite el cambio de
- * sesión, `useAuthSync` actualiza el store y `App.tsx` avanza a `profile`.
+ * Pantalla de Login: correo/contraseña, Google (OAuth) e invitado (anónimo).
+ * Habilitar "Correo/contraseña" en Firebase Console → Authentication → Sign-in method.
  */
-export default function Login({ onBack, onLegalHelp }: Props) {
+export default function Login(props: Props) {
+  if (!shouldMountGoogleIdTokenRequest()) {
+    return <LoginBody {...props} googleAuth={GOOGLE_AUTH_STUB} />;
+  }
+  return <LoginWithGoogleOAuth {...props} />;
+}
+
+function LoginWithGoogleOAuth(props: Props) {
+  const googleAuth = useGoogleAuthImpl();
+  return <LoginBody {...props} googleAuth={googleAuth} />;
+}
+
+interface LoginBodyProps extends Props {
+  googleAuth: GoogleAuthState;
+}
+
+function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBodyProps) {
   const t = useT();
   const firebaseReady = isFirebaseConfigured();
-  const {
-    signIn: signInWithGoogle,
-    loading: googleLoading,
-    error: googleError,
-    configured,
-  } = useGoogleAuth();
+  const { signIn: signInWithGoogle, loading: googleLoading, error: googleError, configured } = googleAuth;
 
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailFieldError, setEmailFieldError] = useState<string | null>(null);
 
-  const loading = googleLoading || guestLoading;
-  const errorMsg = googleError ?? guestError;
+  const loading = googleLoading || guestLoading || emailLoading;
+  const errorMsg = googleError ?? guestError ?? emailFieldError;
   const googleEnabled = firebaseReady && configured && !loading;
   const guestEnabled = firebaseReady && !loading;
+  const emailEnabled = firebaseReady && !loading;
 
   const onGuestPress = async () => {
     setGuestError(null);
+    setEmailFieldError(null);
     setGuestLoading(true);
     try {
       await signInAsGuest();
@@ -49,90 +80,179 @@ export default function Login({ onBack, onLegalHelp }: Props) {
     }
   };
 
+  const onEmailSubmit = useCallback(async () => {
+    setEmailFieldError(null);
+    setGuestError(null);
+    const em = emailInput.trim();
+    if (!em || !passwordInput) {
+      setEmailFieldError(t('login.email.validationEmpty'));
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await signInWithEmailPassword(em, passwordInput);
+    } catch (err) {
+      const code = readFirebaseAuthCode(err);
+      setEmailFieldError(t(firebaseAuthCodeToTranslationKey(code)));
+    } finally {
+      setEmailLoading(false);
+    }
+  }, [emailInput, passwordInput, t]);
+
   return (
-    <View style={styles.root}>
-      <Pressable
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel={t('common.back')}
-        style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.85 }]}
-      >
-        <ChevronLeft color={theme.white} size={24} />
-      </Pressable>
-
-      <View style={styles.center}>
-        <View style={styles.logoWrap}>
-          <LogIn color={theme.white} size={40} />
-        </View>
-        <Text style={styles.title}>{t('login.title')}</Text>
-        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
-
-        <View style={styles.actions}>
-          <Pressable
-            onPress={signInWithGoogle}
-            disabled={!googleEnabled}
-            accessibilityRole="button"
-            accessibilityLabel={t('login.googleButton')}
-            accessibilityState={{ disabled: !googleEnabled, busy: googleLoading }}
-            style={({ pressed }) => [
-              styles.googleBtn,
-              !googleEnabled && styles.btnDisabled,
-              pressed && googleEnabled && styles.btnPressed,
-            ]}
-          >
-            <View style={styles.googleMark} accessibilityElementsHidden importantForAccessibility="no">
-              <Text style={styles.googleMarkText}>G</Text>
-            </View>
-            <Text style={styles.googleBtnText}>
-              {googleLoading ? t('login.loading') : t('login.googleButton')}
-            </Text>
-            {googleLoading && <ActivityIndicator size="small" color={theme.deepNight} />}
-          </Pressable>
-
-          {!configured && <Text style={styles.notConfigured}>{t('login.notConfigured')}</Text>}
-
-          <Pressable
-            onPress={onGuestPress}
-            disabled={!guestEnabled}
-            accessibilityRole="button"
-            accessibilityLabel={t('login.guestButton')}
-            accessibilityState={{ disabled: !guestEnabled, busy: guestLoading }}
-            style={({ pressed }) => [
-              styles.guestBtn,
-              !guestEnabled && styles.btnDisabled,
-              pressed && guestEnabled && styles.btnPressed,
-            ]}
-          >
-            <Text style={styles.guestBtnText}>
-              {guestLoading ? t('login.loading') : t('login.guestButton')}
-            </Text>
-          </Pressable>
-
-          {errorMsg && (
-            <Text style={styles.error} accessibilityLiveRegion="polite">
-              {errorMsg}
-            </Text>
-          )}
-        </View>
-
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.root}>
         <Pressable
-          onPress={onLegalHelp}
+          onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel={t('login.privacyNote')}
-          style={({ pressed }) => [styles.legalLink, pressed && { opacity: 0.85 }]}
+          accessibilityLabel={t('common.back')}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.85 }]}
         >
-          <Text style={styles.legalLinkTxt}>{t('login.privacyNote')}</Text>
+          <ChevronLeft color={theme.white} size={24} />
         </Pressable>
+
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.center}>
+            <View style={styles.logoWrap}>
+              <LogIn color={theme.white} size={40} />
+            </View>
+            <Text style={styles.title}>{t('login.title')}</Text>
+            <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
+
+            <View style={styles.actions}>
+              <TextInput
+                value={emailInput}
+                onChangeText={(v) => {
+                  setEmailInput(v);
+                  setEmailFieldError(null);
+                }}
+                placeholder={t('login.email.placeholderEmail')}
+                placeholderTextColor={theme.gray800}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                editable={emailEnabled}
+                style={styles.input}
+              />
+              <TextInput
+                value={passwordInput}
+                onChangeText={(v) => {
+                  setPasswordInput(v);
+                  setEmailFieldError(null);
+                }}
+                placeholder={t('login.email.placeholderPassword')}
+                placeholderTextColor={theme.gray800}
+                secureTextEntry
+                autoCapitalize="none"
+                autoComplete="password"
+                textContentType="password"
+                editable={emailEnabled}
+                style={styles.input}
+              />
+
+              <Pressable
+                onPress={onEmailSubmit}
+                disabled={!emailEnabled}
+                accessibilityRole="button"
+                accessibilityLabel={t('login.email.signIn')}
+                accessibilityState={{ disabled: !emailEnabled, busy: emailLoading }}
+                style={({ pressed }) => [
+                  styles.emailPrimaryBtn,
+                  !emailEnabled && styles.btnDisabled,
+                  pressed && emailEnabled && styles.btnPressed,
+                ]}
+              >
+                <Text style={styles.emailPrimaryTxt}>
+                  {emailLoading ? t('login.loading') : t('login.email.signIn')}
+                </Text>
+                {emailLoading && <ActivityIndicator size="small" color={theme.white} />}
+              </Pressable>
+
+              <Pressable onPress={onGoToRegister} accessibilityRole="button" style={styles.linkRow}>
+                <Text style={styles.linkTxt}>{t('login.email.linkRegister')}</Text>
+              </Pressable>
+
+              <Text style={styles.dividerTxt}>{t('login.email.orDivider')}</Text>
+
+              <Pressable
+                onPress={signInWithGoogle}
+                disabled={!googleEnabled}
+                accessibilityRole="button"
+                accessibilityLabel={t('login.googleButton')}
+                accessibilityState={{ disabled: !googleEnabled, busy: googleLoading }}
+                style={({ pressed }) => [
+                  styles.googleBtn,
+                  !googleEnabled && styles.btnDisabled,
+                  pressed && googleEnabled && styles.btnPressed,
+                ]}
+              >
+                <View style={styles.googleMark} accessibilityElementsHidden importantForAccessibility="no">
+                  <Text style={styles.googleMarkText}>G</Text>
+                </View>
+                <Text style={styles.googleBtnText}>
+                  {googleLoading ? t('login.loading') : t('login.googleButton')}
+                </Text>
+                {googleLoading && <ActivityIndicator size="small" color={theme.deepNight} />}
+              </Pressable>
+
+              {!configured && <Text style={styles.notConfigured}>{t('login.notConfigured')}</Text>}
+
+              <Pressable
+                onPress={onGuestPress}
+                disabled={!guestEnabled}
+                accessibilityRole="button"
+                accessibilityLabel={t('login.guestButton')}
+                accessibilityState={{ disabled: !guestEnabled, busy: guestLoading }}
+                style={({ pressed }) => [
+                  styles.guestBtn,
+                  !guestEnabled && styles.btnDisabled,
+                  pressed && guestEnabled && styles.btnPressed,
+                ]}
+              >
+                <Text style={styles.guestBtnText}>
+                  {guestLoading ? t('login.loading') : t('login.guestButton')}
+                </Text>
+              </Pressable>
+
+              {errorMsg && (
+                <Text style={styles.error} accessibilityLiveRegion="polite">
+                  {errorMsg}
+                </Text>
+              )}
+            </View>
+
+            <Pressable
+              onPress={onLegalHelp}
+              accessibilityRole="button"
+              accessibilityLabel={t('login.privacyNote')}
+              style={({ pressed }) => [styles.legalLink, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.legalLinkTxt}>{t('login.privacyNote')}</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   root: {
     flex: 1,
     backgroundColor: theme.deepNight,
     paddingHorizontal: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+    paddingTop: 88,
   },
   backBtn: {
     position: 'absolute',
@@ -148,7 +268,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { alignItems: 'center' },
   logoWrap: {
     width: 96,
     height: 96,
@@ -179,8 +299,53 @@ const styles = StyleSheet.create({
   actions: {
     width: '100%',
     maxWidth: 360,
-    marginTop: 40,
+    marginTop: 28,
     gap: 14,
+    alignSelf: 'center',
+  },
+  input: {
+    width: '100%',
+    backgroundColor: theme.surfaceDark,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.white,
+  },
+  emailPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+    paddingVertical: 16,
+    backgroundColor: theme.electricBlue,
+    borderRadius: 16,
+  },
+  emailPrimaryTxt: {
+    color: theme.white,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  linkRow: { paddingVertical: 4, alignSelf: 'center' },
+  linkTxt: {
+    color: theme.electricBlue,
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  dividerTxt: {
+    color: theme.gray600,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 4,
+    marginBottom: 2,
   },
   googleBtn: {
     flexDirection: 'row',
@@ -234,7 +399,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
-  legalLink: { marginTop: 32, paddingVertical: 12, paddingHorizontal: 8 },
+  legalLink: { marginTop: 28, paddingVertical: 12, paddingHorizontal: 8 },
   legalLinkTxt: {
     fontSize: 12,
     fontWeight: '600',

@@ -1,7 +1,6 @@
 import { I18n } from 'i18n-js';
-import * as Localization from 'expo-localization';
 import { useAppStore } from '../store/appStore';
-import type { Language } from '../../shared/types';
+import { detectDeviceLanguage } from '../utils/deviceLanguage';
 
 import { es, type I18nDict } from './locales/es';
 import { ca } from './locales/ca';
@@ -14,16 +13,8 @@ export const i18n = new I18n(translations, {
   enableFallback: true,
 });
 
-/**
- * Detecta el idioma del dispositivo; si no coincide con los soportados,
- * devuelve `es` como fallback (mismo criterio que `useAppStore` por defecto).
- */
-export function detectDeviceLanguage(): Language {
-  const locales = Localization.getLocales?.() ?? [];
-  const primary = locales[0]?.languageCode?.toLowerCase();
-  if (primary === 'ca' || primary === 'en') return primary;
-  return 'es';
-}
+/** Reexport para código que ya importaba desde `i18n`. */
+export { detectDeviceLanguage };
 
 // Sincroniza el idioma global del store → instancia i18n en tiempo real.
 i18n.locale = useAppStore.getState().lang;

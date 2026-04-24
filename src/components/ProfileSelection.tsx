@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { User, Truck, ChevronLeft, LogOut } from 'lucide-react-native';
+import { User, Truck, ChevronLeft, MoreVertical } from 'lucide-react-native';
 import { UserProfile, Language } from '../../shared/types';
 import { theme } from '../theme';
 import { useT } from '../i18n/useT';
 import { useAppStore } from '../store/appStore';
-import { signOutUser } from '../services/firebase/auth';
 
 interface Props {
   lang: Language;
@@ -17,16 +16,8 @@ interface Props {
 export default function ProfileSelection({ onSelect, onBack, onLegalHelp }: Props) {
   const tr = useT();
   const user = useAppStore((s) => s.user);
-  const clearUser = useAppStore((s) => s.clearUser);
+  const openAccountSettings = useAppStore((s) => s.openAccountSettings);
 
-  const onSignOut = async () => {
-    try {
-      await signOutUser();
-    } finally {
-      // Si Firebase no estaba activo, igual reseteamos el store local.
-      clearUser();
-    }
-  };
   const t = {
     question: tr('profile.question'),
     client: tr('profile.client'),
@@ -46,6 +37,17 @@ export default function ProfileSelection({ onSelect, onBack, onLegalHelp }: Prop
       >
         <ChevronLeft color={theme.white} size={24} />
       </Pressable>
+
+      {user ? (
+        <Pressable
+          onPress={openAccountSettings}
+          accessibilityRole="button"
+          accessibilityLabel={tr('profile.accountMenuA11y')}
+          style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.85 }]}
+        >
+          <MoreVertical color={theme.white} size={22} />
+        </Pressable>
+      ) : null}
 
       <View style={styles.center}>
         <Text style={styles.question}>{t.question}</Text>
@@ -86,20 +88,6 @@ export default function ProfileSelection({ onSelect, onBack, onLegalHelp }: Prop
         >
           <Text style={styles.legalLinkTxt}>{legalLabel}</Text>
         </Pressable>
-
-        {user && (
-          <Pressable
-            onPress={onSignOut}
-            accessibilityRole="button"
-            accessibilityLabel={tr('profile.signOut')}
-            style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.85 }]}
-          >
-            <LogOut color={theme.gray500} size={16} />
-            <Text style={styles.signOutTxt}>
-              {user.displayName ? `${tr('profile.signOut')} · ${user.displayName}` : tr('profile.signOut')}
-            </Text>
-          </Pressable>
-        )}
       </View>
     </View>
   );
@@ -116,6 +104,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 32,
     left: 24,
+    zIndex: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: theme.surfaceDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  menuBtn: {
+    position: 'absolute',
+    top: 32,
+    right: 24,
     zIndex: 10,
     width: 48,
     height: 48,
@@ -158,13 +160,4 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 20, fontWeight: '900', color: theme.white },
   cardDesc: { marginTop: 8, color: theme.gray500, fontSize: 14, fontWeight: '500' },
-  signOutBtn: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  signOutTxt: { color: theme.gray500, fontSize: 12, fontWeight: '600' },
 });

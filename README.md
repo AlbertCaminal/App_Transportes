@@ -60,6 +60,8 @@ npm install
 npx expo start
 ```
 
+La primera pantalla es **Iniciar sesión** (el idioma de la UI sigue el del dispositivo hasta que eliges otro). Para cambiar idioma antes de entrar, pulsa **atrás** en login y verás el selector de idioma.
+
 | Plataforma  | Cómo abrirla                                                              |
 | ----------- | ------------------------------------------------------------------------- |
 | **Android** | Pulsa `a` en la terminal de Expo o escanea el QR con Expo Go.             |

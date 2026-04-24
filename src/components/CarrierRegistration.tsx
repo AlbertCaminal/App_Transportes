@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,17 @@ import {
 import { Truck, ChevronLeft, ArrowRight, User, Briefcase, Package } from 'lucide-react-native';
 import { Language, CarrierData, Vehicle } from '../../shared/types';
 import { theme } from '../theme';
+import AuthUpsellModal from './AuthUpsellModal';
+import { useAuthUpsellNavigation } from '../hooks/useAuthUpsellNavigation';
+import { useAppStore } from '../store/appStore';
+import { requiresGoogleSignIn } from '../utils/requiresGoogleSignIn';
 
 interface Props {
   lang: Language;
   onComplete: (data: CarrierData) => void;
   onBack: () => void;
+  /** Si existe, rellena el formulario (p. ej. edición desde «Mi cuenta»). */
+  initialData?: CarrierData;
 }
 
 const labels = {
@@ -50,33 +56,61 @@ const vehicleModels: Vehicle[] = [
   { model: 'Coche Particular', volume: 0.5, maxDimensions: '1.0m x 0.8m x 0.5m' },
 ];
 
-export default function CarrierRegistration({ lang, onComplete, onBack }: Props) {
+export default function CarrierRegistration({ lang, onComplete, onBack, initialData }: Props) {
   const t = labels[lang];
+  const user = useAppStore((s) => s.user);
+  const { goToGoogleLogin } = useAuthUpsellNavigation();
+  const [showUpsell, setShowUpsell] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('');
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    if (!initialData) return;
+    setName(initialData.name);
+    setCompany(initialData.company === 'Independiente' ? '' : initialData.company);
+    setSelectedModel(initialData.vehicle.model);
+  }, [initialData]);
+
+  const submitRegistration = useCallback(() => {
     const vehicle = vehicleModels.find((v) => v.model === selectedModel);
     if (name && selectedModel && vehicle) {
       onComplete({ name, company: company || 'Independiente', vehicle });
     }
+  }, [company, name, onComplete, selectedModel]);
+
+  const handleSubmit = () => {
+    if (requiresGoogleSignIn(user)) {
+      setShowUpsell(true);
+      return;
+    }
+    submitRegistration();
   };
+
+  const onUpsellContinue = useCallback(async () => {
+    setShowUpsell(false);
+    await goToGoogleLogin({ step: 'carrier-registration', profile: 'carrier' });
+  }, [goToGoogleLogin]);
 
   const canSubmit = Boolean(name && selectedModel);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AuthUpsellModal
+        visible={showUpsell}
+        onCancel={() => setShowUpsell(false)}
+        onContinueGoogle={onUpsellContinue}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerRow}>
-          <Pressable onPress={onBack} style={({ pressed }) => [styles.backSmall, pressed && { opacity: 0.85 }]}>
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => [styles.backSmall, pressed && { opacity: 0.85 }]}
+          >
             <ChevronLeft color={theme.white} size={24} />
           </Pressable>
           <Text style={styles.headerTitle}>{t.title}</Text>

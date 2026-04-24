@@ -29,6 +29,7 @@ import {
   Truck,
   Camera,
   HelpCircle,
+  User,
 } from 'lucide-react-native';
 import MapMockup from './MapMockup';
 import { ClientScanModal } from './clientHome/ClientScanModal';
@@ -38,6 +39,11 @@ import { useReviewTariffDelay } from '../hooks/useReviewTariffDelay';
 import { computeMissionPrice } from '../utils/missionPricing';
 import { PackageSize, Language, ServiceType, AppState, PackageItem } from '../../shared/types';
 import { theme } from '../theme';
+import { useT } from '../i18n/useT';
+import AuthUpsellModal from './AuthUpsellModal';
+import { useAuthUpsellNavigation } from '../hooks/useAuthUpsellNavigation';
+import { useAppStore } from '../store/appStore';
+import { requiresGoogleSignIn } from '../utils/requiresGoogleSignIn';
 
 const { height: WIN_H } = Dimensions.get('window');
 
@@ -92,6 +98,11 @@ const SizeButtons = React.memo(function SizeButtons({ selected, onSelect, onScan
 });
 
 export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLegalHelp }: Props) {
+  const tr = useT();
+  const user = useAppStore((s) => s.user);
+  const openAccountSettings = useAppStore((s) => s.openAccountSettings);
+  const { goToGoogleLogin } = useAuthUpsellNavigation();
+  const [showAuthUpsell, setShowAuthUpsell] = useState(false);
   const [origin, setOrigin] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>('express');
   const [expressDest, setExpressDest] = useState('');
@@ -126,6 +137,19 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
   const { isScanning, scanResult, handleAIScan } = useAiScanFlow(onExpressSize, onPackageSize, onHidePrice);
 
   const scheduleTariffReview = useReviewTariffDelay();
+
+  const confirmMissionOrUpsell = useCallback(() => {
+    if (requiresGoogleSignIn(user)) {
+      setShowAuthUpsell(true);
+      return;
+    }
+    onStepChange(serviceType === 'express' ? 'tracking' : 'reservation-confirmed');
+  }, [onStepChange, serviceType, user]);
+
+  const onUpsellContinueGoogle = useCallback(async () => {
+    setShowAuthUpsell(false);
+    await goToGoogleLogin({ step: 'home', profile: 'client' });
+  }, [goToGoogleLogin]);
 
   const priceResult = useMemo(
     () =>
@@ -176,6 +200,11 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
 
   return (
     <View style={styles.root}>
+      <AuthUpsellModal
+        visible={showAuthUpsell}
+        onCancel={() => setShowAuthUpsell(false)}
+        onContinueGoogle={onUpsellContinueGoogle}
+      />
       <ClientScanModal
         visible={isScanning}
         scanResult={scanResult}
@@ -242,6 +271,14 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
           }
         >
           <ChevronLeft color={theme.white} size={24} />
+        </Pressable>
+        <Pressable
+          style={styles.profileFloating}
+          accessibilityRole="button"
+          accessibilityLabel={tr('accountSettings.title')}
+          onPress={openAccountSettings}
+        >
+          <User color={theme.white} size={22} />
         </Pressable>
         <Pressable
           style={styles.helpFloating}
@@ -501,7 +538,7 @@ export default function ClientHome({ lang, step, onStepChange, onBack, onOpenLeg
                 </View>
               </View>
               <Pressable
-                onPress={() => onStepChange(serviceType === 'express' ? 'tracking' : 'reservation-confirmed')}
+                onPress={confirmMissionOrUpsell}
                 accessibilityRole="button"
                 accessibilityLabel="Confirmar misión"
                 style={styles.confirmWhite}
@@ -727,6 +764,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 28,
     left: 22,
+    zIndex: 40,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(22,27,34,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  profileFloating: {
+    position: 'absolute',
+    top: 28,
+    right: 80,
     zIndex: 40,
     width: 48,
     height: 48,
