@@ -18,7 +18,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.0.2",
     "@sentry/react-native": "^8.8.0",
     "expo": "~54.0.33",
     "expo-auth-session": "~7.0.10",
