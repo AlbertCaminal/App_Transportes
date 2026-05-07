@@ -28,6 +28,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Java (Firestore emulator / rules tests)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install & build Cloud Functions
+        run: |
+          cd functions
+          npm ci
+          npm run build
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -36,6 +48,9 @@ jobs:
 
       - name: Tests
         run: npm test -- --ci --coverage=false
+
+      - name: Firestore rules tests
+        run: npm run test:firestore-rules
 
       - name: Upload coverage report (best-effort)
         if: success()

@@ -50,6 +50,11 @@ export default (): ExpoConfig => {
     web: {
       favicon: './assets/favicon.png',
       bundler: 'metro',
+      name: APP_NAME,
+      shortName: 'BCN Logistics',
+      description: 'Envíos y transporte en Barcelona',
+      themeColor: '#0B0E14',
+      backgroundColor: '#0B0E14',
     },
     plugins: ['expo-web-browser'],
     ...(easProjectId

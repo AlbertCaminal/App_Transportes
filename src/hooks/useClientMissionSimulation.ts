@@ -18,7 +18,9 @@ export function useClientMissionSimulation(
   setIsSimulationActive: SetBool,
   setShowMatchNotification: SetBool,
   setShowCarrierInfo: SetBool,
-  setHasSimulatedMatch: SetBool
+  setHasSimulatedMatch: SetBool,
+  /** Si true, el seguimiento lo marca Firestore; no se simula match / transportista. */
+  disableSimulation: boolean
 ): void {
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -31,6 +33,11 @@ export function useClientMissionSimulation(
     clearAll();
 
     const tracking = step === 'tracking' || step === 'reservation-confirmed';
+
+    if (disableSimulation && tracking) {
+      setIsSimulationActive(false);
+      return clearAll;
+    }
 
     if (tracking && isOpenRouteEnabled && !hasSimulatedMatch) {
       setIsSimulationActive(true);
@@ -61,6 +68,7 @@ export function useClientMissionSimulation(
     step,
     isOpenRouteEnabled,
     hasSimulatedMatch,
+    disableSimulation,
     setHasSimulatedMatch,
     setIsSimulationActive,
     setShowCarrierInfo,

@@ -14,6 +14,20 @@ function trimEnv(v: string | undefined): string {
   return (v ?? '').trim();
 }
 
+/**
+ * En web, `makeRedirectUri` puede usar `Constants.linkingUri` del **momento del export** (p. ej. localhost),
+ * no el host real en el navegador → `redirect_uri_mismatch` en Firebase Hosting o otro dominio.
+ * Prioridad: env fijo → `window.location.origin` en cliente → fallback Expo.
+ */
+function resolveWebGoogleRedirectUri(redirectUriOptions: Partial<AuthSessionRedirectUriOptions>): string {
+  const fromEnv = trimEnv(process.env.EXPO_PUBLIC_GOOGLE_WEB_REDIRECT_URI);
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return makeRedirectUri(redirectUriOptions);
+}
+
 /** Expo Go (Store Client): OAuth debe usar redirect HTTPS en auth.expo.io, no exp://… (Google lo rechaza). */
 function isExpoGoStoreClient(): boolean {
   return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -149,6 +163,7 @@ export function useGoogleAuthImpl(): GoogleAuthState {
       return {
         selectAccount,
         webClientId: web,
+        redirectUri: resolveWebGoogleRedirectUri(redirectUriOptions),
       };
     }
 
@@ -172,7 +187,7 @@ export function useGoogleAuthImpl(): GoogleAuthState {
       androidClientId: android,
       webClientId: web,
     };
-  }, [androidClientId, expoClientId, iosClientId, webClientId]);
+  }, [androidClientId, expoClientId, iosClientId, webClientId, redirectUriOptions]);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
     googleRequestConfig,
@@ -183,15 +198,17 @@ export function useGoogleAuthImpl(): GoogleAuthState {
     if (!__DEV__) return;
     try {
       const computed =
-        isExpoGoStoreClient() && Platform.OS !== 'web'
-          ? resolveExpoProxyRedirectUri()
-          : makeRedirectUri(redirectUriOptions);
+        Platform.OS === 'web'
+          ? resolveWebGoogleRedirectUri(redirectUriOptions)
+          : isExpoGoStoreClient()
+            ? resolveExpoProxyRedirectUri()
+            : makeRedirectUri(redirectUriOptions);
       console.warn(
-        '[Google OAuth] URI de redirección que usa esta build (añádela tal cual en Google Cloud → Credenciales → cliente Web):\n',
+        '[Google OAuth] URI de redirección que usa esta build (añádela tal cual en Google Cloud → Credenciales → cliente OAuth tipo Web → URIs de redireccionamiento):\n',
         computed
       );
       console.warn(
-        '[Google OAuth] Orígenes JS habituales si falta redirect_uri_mismatch en web: http://localhost:8081  https://auth.expo.io'
+        '[Google OAuth] Orígenes JS autorizados (misma consola → Orígenes JavaScript): en web suele bastar el mismo host sin ruta (p. ej. http://localhost:8081 y https://TU-PROYECTO.web.app). Expo Go: https://auth.expo.io'
       );
     } catch {
       /* noop */

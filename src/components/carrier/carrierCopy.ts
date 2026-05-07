@@ -10,8 +10,7 @@ export type CarrierStrings = {
   accept: string;
   reject: string;
   confirm: string;
-  confirmed: string;
-  successMsg: string;
+  activeRoutes: string;
   todayActivity: string;
   closeSession: string;
   calendarTitle: string;
@@ -29,8 +28,7 @@ const COPY: Record<Language, CarrierStrings> = {
     accept: 'ACCEPTAR',
     reject: 'REBUTJAR',
     confirm: 'ACCEPTAR RUTA',
-    confirmed: 'RUTA CONFIRMADA',
-    successMsg: 'Ruta afegida a la teva agenda',
+    activeRoutes: 'Rutes actives',
     todayActivity: "Activitat d'Avui",
     closeSession: 'Tancar Sessió',
     calendarTitle: 'La meva Agenda',
@@ -46,8 +44,7 @@ const COPY: Record<Language, CarrierStrings> = {
     accept: 'ACEPTAR',
     reject: 'RECHAZAR',
     confirm: 'ACEPTAR RUTA',
-    confirmed: 'RUTA CONFIRMADA',
-    successMsg: 'Ruta añadida a tu agenda',
+    activeRoutes: 'Rutas activas',
     todayActivity: 'Actividad de Hoy',
     closeSession: 'Cerrar Sesión',
     calendarTitle: 'Mi Agenda',
@@ -63,8 +60,7 @@ const COPY: Record<Language, CarrierStrings> = {
     accept: 'ACCEPT',
     reject: 'REJECT',
     confirm: 'ACCEPT ROUTE',
-    confirmed: 'ROUTE CONFIRMED',
-    successMsg: 'Route added to your agenda',
+    activeRoutes: 'Active routes',
     todayActivity: "Today's Activity",
     closeSession: 'Sign Out',
     calendarTitle: 'My Agenda',

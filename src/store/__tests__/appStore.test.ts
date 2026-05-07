@@ -101,7 +101,7 @@ describe('appStore', () => {
     const carrier = {
       name: 'T',
       company: 'C',
-      vehicle: { model: 'V', volume: 12, maxDimensions: '1x1x1' },
+      vehicle: { brand: 'B', model: 'V', color: 'R', licensePlate: 'ABC1' },
     };
     useAppStore
       .getState()
@@ -139,6 +139,12 @@ describe('appStore', () => {
     expect(s.user).toBeNull();
     expect(s.profile).toBeNull();
     expect(s.step).toBe('login');
+  });
+
+  it('clearUser borra clientTrackingRequestId', () => {
+    useAppStore.getState().setClientTrackingRequestId('req-1');
+    useAppStore.getState().clearUser();
+    expect(useAppStore.getState().clientTrackingRequestId).toBeNull();
   });
 
   it('selectProfile client → home', () => {
@@ -181,7 +187,7 @@ describe('appStore', () => {
     useAppStore.getState().setCarrierData({
       name: 'Nom',
       company: 'Co',
-      vehicle: { model: 'X', volume: 1, maxDimensions: '1x1' },
+      vehicle: { brand: 'X', model: 'Y', color: 'Z', licensePlate: 'XYZ2' },
     });
     expect(useAppStore.getState().step).toBe('account-settings');
     expect(useAppStore.getState().carrierData?.name).toBe('Nom');

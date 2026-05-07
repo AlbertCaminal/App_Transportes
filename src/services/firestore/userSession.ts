@@ -18,15 +18,29 @@ function parseCarrierProfile(raw: unknown): CarrierData | undefined {
   const vehicle = o.vehicle;
   if (!vehicle || typeof vehicle !== 'object') return undefined;
   const v = vehicle as Record<string, unknown>;
-  const model = typeof v.model === 'string' ? v.model : '';
-  const volume = typeof v.volume === 'number' && Number.isFinite(v.volume) ? v.volume : 0;
-  const maxDimensions = typeof v.maxDimensions === 'string' ? v.maxDimensions : '';
-  if (!name.trim() || !company.trim() || !model.trim()) return undefined;
-  return {
-    name: name.trim(),
-    company: company.trim(),
-    vehicle: { model: model.trim(), volume, maxDimensions },
-  };
+  const brand = typeof v.brand === 'string' ? v.brand.trim() : '';
+  const model = typeof v.model === 'string' ? v.model.trim() : '';
+  const color = typeof v.color === 'string' ? v.color.trim() : '';
+  const licensePlateRaw = typeof v.licensePlate === 'string' ? v.licensePlate.trim().toUpperCase() : '';
+  const legacyVolume = v.volume;
+  const legacyMax = v.maxDimensions;
+  if (!name.trim() || !company.trim()) return undefined;
+  const plateOpt = licensePlateRaw ? { licensePlate: licensePlateRaw } : {};
+  if (brand && model && color) {
+    return {
+      name: name.trim(),
+      company: company.trim(),
+      vehicle: { brand, model, color, ...plateOpt },
+    };
+  }
+  if (model && (typeof legacyVolume === 'number' || typeof legacyMax === 'string')) {
+    return {
+      name: name.trim(),
+      company: company.trim(),
+      vehicle: { brand: '', model, color: '', ...plateOpt },
+    };
+  }
+  return undefined;
 }
 
 /** Interpreta campos de sesión guardados en `users/{uid}` (merge con lo demás del documento). */

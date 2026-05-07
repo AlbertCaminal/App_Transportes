@@ -1,102 +1,94 @@
 import { computeMissionPrice } from '../missionPricing';
-import type { PackageItem } from '../../../shared/types';
+import type { PackageItem, PackagePhysicalSpec } from '../../../shared/types';
+
+const tierS: PackagePhysicalSpec = { lengthCm: 50, widthCm: 40, heightCm: 30, weightKg: 8 };
+const tierM: PackagePhysicalSpec = { lengthCm: 100, widthCm: 80, heightCm: 70, weightKg: 30 };
+const tierXS: PackagePhysicalSpec = { lengthCm: 25, widthCm: 20, heightCm: 15, weightKg: 2 };
+const tierH: PackagePhysicalSpec = { lengthCm: 220, widthCm: 100, heightCm: 90, weightKg: 120 };
 
 describe('computeMissionPrice', () => {
   describe('express', () => {
-    it('calcula el precio express S sin match (sin descuento)', () => {
+    it('calcula el precio express (banda S) sense match (sense descompte)', () => {
       const res = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'S',
-        packages: [],
+        expressSpecs: tierS,
         hasSimulatedMatch: false,
       });
-      // base 8 + km 0.9*6 + 5 = 18.40
       expect(res.full).toBe('18.40');
       expect(res.final).toBe('18.40');
       expect(res.savings).toBe('6.44');
       expect(res.count).toBe(1);
     });
 
-    it('aplica 35% de descuento con match simulado', () => {
+    it('aplica 35% de descompte amb match simulat', () => {
       const res = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'M',
-        packages: [],
+        expressSpecs: tierM,
         hasSimulatedMatch: true,
       });
-      // base 16 + km 1.2*6 + 5 = 28.20 ; descuento 9.87 ; final 18.33
       expect(res.full).toBe('28.20');
       expect(res.savings).toBe('9.87');
       expect(res.final).toBe('18.33');
     });
 
-    it('varía por tamaño de paquete', () => {
+    it('varia segons volum i pes (XS vs H)', () => {
       const xs = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'XS',
-        packages: [],
+        expressSpecs: tierXS,
         hasSimulatedMatch: false,
       });
       const h = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'H',
-        packages: [],
+        expressSpecs: tierH,
         hasSimulatedMatch: false,
       });
       expect(parseFloat(xs.full)).toBeLessThan(parseFloat(h.full));
     });
   });
 
-  describe('programmed (multi-paquete)', () => {
-    const pkg = (id: string, size: PackageItem['size']): PackageItem => ({
+  describe('programmed (multi-paquet)', () => {
+    const pkg = (id: string, specs: PackagePhysicalSpec): PackageItem => ({
       id,
-      size,
       destination: 'Barcelona',
+      specs,
     });
 
-    it('suma paquete único sin fee multi-stop', () => {
+    it('suma un sol paquet sense fee multi-parada', () => {
       const res = computeMissionPrice({
         serviceType: 'programmed',
-        expressSize: 'S',
-        packages: [pkg('1', 'S')],
+        packages: [pkg('1', tierS)],
         hasSimulatedMatch: false,
       });
-      // S: 8 + 0.9*6 = 13.40
       expect(res.full).toBe('13.40');
       expect(res.count).toBe(1);
     });
 
-    it('aplica fee multi-stop (3.5 por paquete adicional)', () => {
+    it('aplica fee multi-parada (3.5 per parada addicional)', () => {
       const res = computeMissionPrice({
         serviceType: 'programmed',
-        expressSize: 'S',
-        packages: [pkg('1', 'S'), pkg('2', 'S'), pkg('3', 'S')],
+        packages: [pkg('1', tierS), pkg('2', tierS), pkg('3', tierS)],
         hasSimulatedMatch: false,
       });
-      // 3 * 13.40 = 40.20 + 2 * 3.5 = 47.20
       expect(res.full).toBe('47.20');
       expect(res.count).toBe(3);
     });
 
-    it('respeta match simulado con multi-paquete', () => {
+    it('respecta match simulat amb diverses bandes', () => {
       const res = computeMissionPrice({
         serviceType: 'programmed',
-        expressSize: 'S',
-        packages: [pkg('1', 'M'), pkg('2', 'XS')],
+        packages: [pkg('1', tierM), pkg('2', tierXS)],
         hasSimulatedMatch: true,
       });
-      // M: 16 + 1.2*6 = 23.20 ; XS: 4.5 + 0.6*6 = 8.10 ; +3.5 = 34.80
       expect(res.full).toBe('34.80');
       expect(parseFloat(res.final)).toBeCloseTo(34.8 * 0.65, 2);
     });
   });
 
-  describe('invariantes', () => {
-    it('full, final y savings son strings con 2 decimales', () => {
+  describe('invariants', () => {
+    it('full, final i savings són strings amb 2 decimals', () => {
       const res = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'S',
-        packages: [],
+        expressSpecs: tierS,
         hasSimulatedMatch: false,
       });
       expect(res.full).toMatch(/^\d+\.\d{2}$/);
@@ -104,11 +96,10 @@ describe('computeMissionPrice', () => {
       expect(res.savings).toMatch(/^\d+\.\d{2}$/);
     });
 
-    it('cuando hay match, final === full - savings (tolerancia decimal)', () => {
+    it('amb match, final === full - savings (tolerància)', () => {
       const res = computeMissionPrice({
         serviceType: 'express',
-        expressSize: 'H',
-        packages: [],
+        expressSpecs: tierH,
         hasSimulatedMatch: true,
       });
       expect(parseFloat(res.final)).toBeCloseTo(parseFloat(res.full) - parseFloat(res.savings), 1);

@@ -1,17 +1,18 @@
 import { computeMissionPrice } from '../missionPricing';
-import type { PackageItem } from '../../../shared/types';
+import type { PackageItem, PackagePhysicalSpec } from '../../../shared/types';
 
-const mk = (id: string, size: PackageItem['size']): PackageItem => ({
+const xs: PackagePhysicalSpec = { lengthCm: 25, widthCm: 20, heightCm: 15, weightKg: 2 };
+
+const mk = (id: string, specs: PackagePhysicalSpec): PackageItem => ({
   id,
-  size,
   destination: 'x',
+  specs,
 });
 
 describe('computeMissionPrice · edge cases', () => {
-  it('programmed sin paquetes: total 0 y conteo 0', () => {
+  it('programmed sense paquets: total 0 i compte 0', () => {
     const r = computeMissionPrice({
       serviceType: 'programmed',
-      expressSize: 'S',
       packages: [],
       hasSimulatedMatch: false,
     });
@@ -20,10 +21,9 @@ describe('computeMissionPrice · edge cases', () => {
     expect(r.count).toBe(0);
   });
 
-  it('programmed con match pero sin paquetes: savings 0', () => {
+  it('programmed amb match però sense paquets: savings 0', () => {
     const r = computeMissionPrice({
       serviceType: 'programmed',
-      expressSize: 'S',
       packages: [],
       hasSimulatedMatch: true,
     });
@@ -31,29 +31,32 @@ describe('computeMissionPrice · edge cases', () => {
     expect(r.final).toBe('0.00');
   });
 
-  it('programmed: 2 paquetes añaden un fee multi-stop de 3.50', () => {
+  it('programmed: 2 paquets afegeixen un fee multi-stop de 3.50', () => {
     const single = computeMissionPrice({
       serviceType: 'programmed',
-      expressSize: 'S',
-      packages: [mk('1', 'XS')],
+      packages: [mk('1', xs)],
       hasSimulatedMatch: false,
     });
     const double = computeMissionPrice({
       serviceType: 'programmed',
-      expressSize: 'S',
-      packages: [mk('1', 'XS'), mk('2', 'XS')],
+      packages: [mk('1', xs), mk('2', xs)],
       hasSimulatedMatch: false,
     });
     const diff = parseFloat(double.full) - 2 * parseFloat(single.full);
     expect(diff).toBeCloseTo(3.5, 2);
   });
 
-  it('todos los tamaños válidos producen numéricos positivos', () => {
-    (['XS', 'S', 'M', 'H'] as const).forEach((size) => {
+  it('diverses mides express donen preus positius', () => {
+    const specs: PackagePhysicalSpec[] = [
+      { lengthCm: 25, widthCm: 20, heightCm: 15, weightKg: 2 },
+      { lengthCm: 50, widthCm: 40, heightCm: 30, weightKg: 8 },
+      { lengthCm: 100, widthCm: 80, heightCm: 70, weightKg: 30 },
+      { lengthCm: 220, widthCm: 100, heightCm: 90, weightKg: 120 },
+    ];
+    specs.forEach((expressSpecs) => {
       const r = computeMissionPrice({
         serviceType: 'express',
-        expressSize: size,
-        packages: [],
+        expressSpecs,
         hasSimulatedMatch: false,
       });
       expect(parseFloat(r.full)).toBeGreaterThan(0);

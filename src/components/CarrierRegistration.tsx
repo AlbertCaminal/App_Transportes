@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Truck, ChevronLeft, ArrowRight, User, Briefcase, Package } from 'lucide-react-native';
+import { Truck, ChevronLeft, ArrowRight, User, Briefcase, Palette } from 'lucide-react-native';
 import { Language, CarrierData, Vehicle } from '../../shared/types';
-import { theme } from '../theme';
+import type { AppPalette } from '../theme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import AuthUpsellModal from './AuthUpsellModal';
 import { useAuthUpsellNavigation } from '../hooks/useAuthUpsellNavigation';
 import { useAppStore } from '../store/appStore';
@@ -31,6 +32,10 @@ const labels = {
     name: 'Nom Complet',
     company: 'Empresa / Autònom',
     vehicle: 'El teu Vehicle',
+    brand: 'Marca',
+    model: 'Model',
+    color: 'Color',
+    plate: 'Matrícula',
     cta: 'Començar a guanyar',
   },
   es: {
@@ -38,6 +43,10 @@ const labels = {
     name: 'Nombre Completo',
     company: 'Empresa / Autónomo',
     vehicle: 'Tu Vehículo',
+    brand: 'Marca',
+    model: 'Modelo',
+    color: 'Color',
+    plate: 'Matrícula',
     cta: 'Empezar a ganar',
   },
   en: {
@@ -45,39 +54,113 @@ const labels = {
     name: 'Full Name',
     company: 'Company / Freelance',
     vehicle: 'Your Vehicle',
+    brand: 'Brand',
+    model: 'Model',
+    color: 'Color',
+    plate: 'License plate',
     cta: 'Start Earning',
   },
 } as const;
 
-const vehicleModels: Vehicle[] = [
-  { model: 'Renault Kangoo', volume: 3.3, maxDimensions: '1.7m x 1.2m x 1.1m' },
-  { model: 'Mercedes Sprinter', volume: 10.5, maxDimensions: '3.3m x 1.7m x 1.9m' },
-  { model: 'Iveco Daily', volume: 14.0, maxDimensions: '4.1m x 1.8m x 1.9m' },
-  { model: 'Coche Particular', volume: 0.5, maxDimensions: '1.0m x 0.8m x 0.5m' },
-];
+function carrierRegStyles(theme: AppPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: theme.deepNight },
+    scroll: { flex: 1 },
+    scrollContent: { padding: 32, paddingBottom: 48 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 40 },
+    backSmall: {
+      padding: 12,
+      backgroundColor: theme.surfaceDark,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    headerTitle: { fontSize: 22, fontWeight: '900', color: theme.white, flex: 1 },
+    field: { marginBottom: 28 },
+    labelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+      paddingLeft: 4,
+    },
+    label: {
+      fontSize: 11,
+      fontWeight: '900',
+      color: theme.textOnDarkMuted,
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+    },
+    subLabel: { marginTop: 14, marginBottom: 8 },
+    inputGap: { marginBottom: 14 },
+    input: {
+      backgroundColor: theme.surfaceDark,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      borderRadius: 24,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.white,
+    },
+    cta: {
+      marginTop: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      backgroundColor: theme.electricBlue,
+      paddingVertical: 22,
+      borderRadius: 28,
+    },
+    ctaDisabled: { opacity: 0.25 },
+    ctaText: {
+      color: theme.onPrimary,
+      fontWeight: '900',
+      fontSize: 13,
+      letterSpacing: 3,
+      textTransform: 'uppercase',
+    },
+  });
+}
 
 export default function CarrierRegistration({ lang, onComplete, onBack, initialData }: Props) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => carrierRegStyles(theme), [theme]);
   const t = labels[lang];
   const user = useAppStore((s) => s.user);
   const { goToGoogleLogin } = useAuthUpsellNavigation();
   const [showUpsell, setShowUpsell] = useState(false);
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [color, setColor] = useState('');
+  const [plate, setPlate] = useState('');
 
   useEffect(() => {
     if (!initialData) return;
     setName(initialData.name);
     setCompany(initialData.company === 'Independiente' ? '' : initialData.company);
-    setSelectedModel(initialData.vehicle.model);
+    setBrand(initialData.vehicle.brand);
+    setModel(initialData.vehicle.model);
+    setColor(initialData.vehicle.color);
+    setPlate(initialData.vehicle.licensePlate?.trim() ?? '');
   }, [initialData]);
 
   const submitRegistration = useCallback(() => {
-    const vehicle = vehicleModels.find((v) => v.model === selectedModel);
-    if (name && selectedModel && vehicle) {
-      onComplete({ name, company: company || 'Independiente', vehicle });
+    const plateNorm = plate.trim().toUpperCase();
+    const vehicle: Vehicle = {
+      brand: brand.trim(),
+      model: model.trim(),
+      color: color.trim(),
+      licensePlate: plateNorm,
+    };
+    if (name.trim() && vehicle.brand && vehicle.model && vehicle.color && plateNorm) {
+      onComplete({ name: name.trim(), company: company.trim() || 'Independiente', vehicle });
     }
-  }, [company, name, onComplete, selectedModel]);
+  }, [brand, color, company, model, name, onComplete, plate]);
 
   const handleSubmit = () => {
     if (requiresGoogleSignIn(user)) {
@@ -92,7 +175,7 @@ export default function CarrierRegistration({ lang, onComplete, onBack, initialD
     await goToGoogleLogin({ step: 'carrier-registration', profile: 'carrier' });
   }, [goToGoogleLogin]);
 
-  const canSubmit = Boolean(name && selectedModel);
+  const canSubmit = Boolean(name.trim() && brand.trim() && model.trim() && color.trim() && plate.trim());
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -125,7 +208,7 @@ export default function CarrierRegistration({ lang, onComplete, onBack, initialD
             value={name}
             onChangeText={setName}
             placeholder="Ej: Marc Sastre"
-            placeholderTextColor={theme.gray800}
+            placeholderTextColor={theme.inputPlaceholder}
             style={styles.input}
           />
         </View>
@@ -139,7 +222,7 @@ export default function CarrierRegistration({ lang, onComplete, onBack, initialD
             value={company}
             onChangeText={setCompany}
             placeholder="Ej: Autònom BCN"
-            placeholderTextColor={theme.gray800}
+            placeholderTextColor={theme.inputPlaceholder}
             style={styles.input}
           />
         </View>
@@ -149,29 +232,44 @@ export default function CarrierRegistration({ lang, onComplete, onBack, initialD
             <Truck color={theme.electricBlue} size={12} />
             <Text style={styles.label}>{t.vehicle}</Text>
           </View>
-          {vehicleModels.map((v) => {
-            const sel = selectedModel === v.model;
-            return (
-              <Pressable
-                key={v.model}
-                onPress={() => setSelectedModel(v.model)}
-                style={[styles.vehicleRow, sel && styles.vehicleRowSel]}
-              >
-                <View style={styles.vehicleLeft}>
-                  <View style={[styles.vehicleIcon, sel && styles.vehicleIconSel]}>
-                    <Truck color={sel ? theme.white : theme.gray600} size={24} />
-                  </View>
-                  <View>
-                    <Text style={[styles.vehicleName, sel && { color: theme.white }]}>{v.model}</Text>
-                    <View style={styles.vehicleMetaRow}>
-                      <Package color={theme.gray600} size={12} />
-                      <Text style={styles.vehicleMeta}> Capacidad: {v.volume}m³</Text>
-                    </View>
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { letterSpacing: 1 }]}>{t.brand}</Text>
+          </View>
+          <TextInput
+            value={brand}
+            onChangeText={setBrand}
+            placeholder="Ej: Renault"
+            placeholderTextColor={theme.inputPlaceholder}
+            style={styles.input}
+          />
+          <Text style={[styles.label, styles.subLabel]}>{t.model}</Text>
+          <TextInput
+            value={model}
+            onChangeText={setModel}
+            placeholder="Ej: Kangoo"
+            placeholderTextColor={theme.inputPlaceholder}
+            style={[styles.input, styles.inputGap]}
+          />
+          <View style={styles.labelRow}>
+            <Palette color={theme.electricBlue} size={12} />
+            <Text style={styles.label}>{t.color}</Text>
+          </View>
+          <TextInput
+            value={color}
+            onChangeText={setColor}
+            placeholder="Ej: Blanco"
+            placeholderTextColor={theme.inputPlaceholder}
+            style={styles.input}
+          />
+          <Text style={[styles.label, styles.subLabel]}>{t.plate}</Text>
+          <TextInput
+            value={plate}
+            onChangeText={(txt) => setPlate(txt.toUpperCase())}
+            placeholder="1234 ABC"
+            placeholderTextColor={theme.inputPlaceholder}
+            autoCapitalize="characters"
+            style={[styles.input, styles.inputGap]}
+          />
         </View>
 
         <Pressable
@@ -184,93 +282,9 @@ export default function CarrierRegistration({ lang, onComplete, onBack, initialD
           ]}
         >
           <Text style={styles.ctaText}>{t.cta}</Text>
-          <ArrowRight color="#fff" size={20} />
+          <ArrowRight color={theme.onPrimary} size={20} />
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.deepNight },
-  scroll: { flex: 1 },
-  scrollContent: { padding: 32, paddingBottom: 48 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 40 },
-  backSmall: {
-    padding: 12,
-    backgroundColor: theme.surfaceDark,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  headerTitle: { fontSize: 22, fontWeight: '900', color: theme.white, flex: 1 },
-  field: { marginBottom: 28 },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-    paddingLeft: 4,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: theme.gray600,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  input: {
-    backgroundColor: theme.surfaceDark,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 24,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.white,
-  },
-  vehicleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.05)',
-    backgroundColor: theme.surfaceDark,
-    marginBottom: 14,
-  },
-  vehicleRowSel: {
-    borderColor: theme.electricBlue,
-    backgroundColor: 'rgba(48,112,240,0.05)',
-  },
-  vehicleLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  vehicleIcon: {
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: theme.deepNight,
-  },
-  vehicleIconSel: { backgroundColor: theme.electricBlue },
-  vehicleName: { fontWeight: '900', color: theme.gray500, fontSize: 16 },
-  vehicleMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  vehicleMeta: { fontSize: 10, fontWeight: '700', color: theme.gray600, textTransform: 'uppercase' },
-  cta: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    backgroundColor: theme.electricBlue,
-    paddingVertical: 22,
-    borderRadius: 28,
-  },
-  ctaDisabled: { opacity: 0.25 },
-  ctaText: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 13,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-  },
-});

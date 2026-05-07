@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Linking, Alert, Platform } from 'react-native';
 import { ChevronLeft, ExternalLink, Mail } from 'lucide-react-native';
 import { Language } from '../../shared/types';
 import { publicApp } from '../config/publicApp';
-import { theme } from '../theme';
+import type { AppPalette } from '../theme';
 import { useT } from '../i18n/useT';
+import { useAppTheme } from '../hooks/useAppTheme';
 
 interface Props {
   lang: Language;
@@ -24,8 +25,66 @@ async function openUrl(url: string, errMsg: string): Promise<void> {
   }
 }
 
+function legalStyles(theme: AppPalette) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.deepNight,
+      paddingHorizontal: 24,
+    },
+    backBtn: {
+      marginTop: 16,
+      marginBottom: 8,
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: theme.surfaceDark,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      alignSelf: 'flex-start',
+    },
+    scroll: { paddingBottom: 40 },
+    title: {
+      fontSize: 26,
+      fontWeight: '900',
+      color: theme.white,
+      marginBottom: 6,
+    },
+    sub: { fontSize: 16, fontWeight: '800', color: theme.electricBlue, marginBottom: 4 },
+    muted: { fontSize: 14, fontWeight: '500', color: theme.gray500, marginBottom: 28 },
+    list: { gap: 12 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      padding: 18,
+      backgroundColor: theme.surfaceDark,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    rowPressed: { opacity: 0.92 },
+    rowIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: theme.langChipSelectedBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowText: { flex: 1, minWidth: 0 },
+    rowTitle: { fontSize: 16, fontWeight: '800', color: theme.white },
+    rowHint: { marginTop: 4, fontSize: 12, fontWeight: '500', color: theme.gray600 },
+    webNote: { marginTop: 24, fontSize: 12, color: theme.gray600, lineHeight: 18 },
+  });
+}
+
 export default function LegalHelp({ onBack }: Props) {
   const tr = useT();
+  const theme = useAppTheme();
+  const styles = useMemo(() => legalStyles(theme), [theme]);
   const t = {
     title: tr('legal.title'),
     subtitle: tr('legal.subtitle'),
@@ -116,57 +175,3 @@ export default function LegalHelp({ onBack }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.deepNight,
-    paddingHorizontal: 24,
-  },
-  backBtn: {
-    marginTop: 16,
-    marginBottom: 8,
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: theme.surfaceDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    alignSelf: 'flex-start',
-  },
-  scroll: { paddingBottom: 40 },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: theme.white,
-    marginBottom: 6,
-  },
-  sub: { fontSize: 16, fontWeight: '800', color: theme.electricBlue, marginBottom: 4 },
-  muted: { fontSize: 14, fontWeight: '500', color: theme.gray500, marginBottom: 28 },
-  list: { gap: 12 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 18,
-    backgroundColor: theme.surfaceDark,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  rowPressed: { opacity: 0.92 },
-  rowIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(48,112,240,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowText: { flex: 1, minWidth: 0 },
-  rowTitle: { fontSize: 16, fontWeight: '800', color: theme.white },
-  rowHint: { marginTop: 4, fontSize: 12, fontWeight: '500', color: theme.gray600 },
-  webNote: { marginTop: 24, fontSize: 12, color: theme.gray600, lineHeight: 18 },
-});

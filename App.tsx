@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useAuthSync } from './src/hooks/useAuthSync';
 import { initSentry, wrapRootComponent } from './src/services/monitoring/sentry';
 import './src/i18n'; // inicializa i18n-js y sincroniza con el store
@@ -17,7 +17,7 @@ import CarrierRegistration from './src/components/CarrierRegistration';
 import CarrierHome from './src/components/CarrierHome';
 import LegalHelp from './src/components/LegalHelp';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
-import { theme } from './src/theme';
+import { paletteFor } from './src/theme';
 import { useAppStore } from './src/store/appStore';
 
 function App() {
@@ -27,6 +27,7 @@ function App() {
     initSentry();
   }, []);
 
+  const colorScheme = useAppStore((s) => s.colorScheme);
   const lang = useAppStore((s) => s.lang);
   const step = useAppStore((s) => s.step);
   const carrierData = useAppStore((s) => s.carrierData);
@@ -41,12 +42,26 @@ function App() {
   const exitCarrierRegistration = useAppStore((s) => s.exitCarrierRegistration);
   const closeAccountSettings = useAppStore((s) => s.closeAccountSettings);
 
+  const theme = useMemo(() => paletteFor(colorScheme), [colorScheme]);
+  const layoutStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        gesture: { flex: 1, minHeight: 0 },
+        safe: { flex: 1, minHeight: 0, backgroundColor: theme.bgRoot },
+        root: { flex: 1, minHeight: 0, backgroundColor: theme.bgRoot },
+        authSplash: { justifyContent: 'center', alignItems: 'center' },
+      }),
+    [theme]
+  );
+
+  const statusBarStyle = colorScheme === 'light' ? 'dark' : 'light';
+
   if (!authInitialized) {
     return (
-      <GestureHandlerRootView style={styles.gesture}>
+      <GestureHandlerRootView style={layoutStyles.gesture}>
         <SafeAreaProvider>
-          <SafeAreaView style={[styles.safe, styles.authSplash]} edges={['top', 'left', 'right']}>
-            <StatusBar style="light" />
+          <SafeAreaView style={[layoutStyles.safe, layoutStyles.authSplash]} edges={['top', 'left', 'right']}>
+            <StatusBar style={statusBarStyle} />
             <ActivityIndicator size="large" color={theme.electricBlue} accessibilityLabel="Loading" />
           </SafeAreaView>
         </SafeAreaProvider>
@@ -55,12 +70,12 @@ function App() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.gesture}>
+    <GestureHandlerRootView style={layoutStyles.gesture}>
       <SafeAreaProvider>
-        <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-          <StatusBar style="light" />
+        <SafeAreaView style={layoutStyles.safe} edges={['top', 'left', 'right']}>
+          <StatusBar style={statusBarStyle} />
           <AppErrorBoundary>
-            <View style={styles.root}>
+            <View style={layoutStyles.root}>
               {step === 'legal-help' && <LegalHelp lang={lang} onBack={closeLegalHelp} />}
 
               {step === 'onboarding' && <LanguageOnboarding onSelect={setLang} />}
@@ -103,8 +118,8 @@ function App() {
                 <CarrierHome
                   lang={lang}
                   carrier={carrierData}
-                  onExit={() => setStep('profile')}
                   onOpenLegalHelp={openLegalHelp}
+                  onBack={() => setStep('profile')}
                 />
               )}
 
@@ -124,12 +139,5 @@ function App() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  gesture: { flex: 1 },
-  safe: { flex: 1, backgroundColor: theme.bgRoot },
-  root: { flex: 1, backgroundColor: theme.bgRoot },
-  authSplash: { justifyContent: 'center', alignItems: 'center' },
-});
 
 export default wrapRootComponent(App);

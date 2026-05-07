@@ -28,21 +28,21 @@ Plataforma móvil de **economía colaborativa** que conecta a personas o empresa
 
 Trabajo en curso. Lo que **ya está** vs lo **planificado**:
 
-| Capa                          | Tecnología                                                                                                    | Estado                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Cliente móvil/web             | React Native (Expo, TypeScript)                                                                               | Implementado                        |
-| UI y navegación               | Componentes propios + `lucide-react-native`                                                                   | Implementado                        |
-| Estado global                 | Zustand (`src/store/appStore.ts`)                                                                             | Implementado                        |
-| Internacionalización          | `i18n-js` + `expo-localization` (ca/es/en)                                                                    | Implementado (migración progresiva) |
-| Autenticación                 | Firebase Auth — Google Sign-In (`expo-auth-session`) + invitado anónimo, con upgrade vía `linkWithCredential` | Implementado                        |
-| Base de datos                 | Firestore (`users/{uid}`)                                                                                     | Implementado                        |
-| Observabilidad                | `@sentry/react-native` (opcional via DSN)                                                                     | Implementado                        |
-| Calidad                       | Jest + Testing Library, ESLint endurecido, Prettier + Husky                                                   | Implementado                        |
-| CI                            | GitHub Actions (`typecheck` / `lint` / `test`)                                                                | Implementado                        |
-| Mapas y rutas                 | Mapbox SDK                                                                                                    | Planificado                         |
-| Pagos                         | Stripe (PaymentIntents + webhooks)                                                                            | Planificado                         |
-| Lógica servidor               | Firebase Cloud Functions                                                                                      | Planificado                         |
-| Algoritmo de _matching_ (FPD) | Descomposición fluido-partícula                                                                               | Planificado                         |
+| Capa                          | Tecnología                                                                                                                                                       | Estado                                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cliente móvil/web             | React Native (Expo, TypeScript)                                                                                                                                  | Implementado                                                                           |
+| UI y navegación               | Componentes propios + `lucide-react-native`                                                                                                                      | Implementado                                                                           |
+| Estado global                 | Zustand (`src/store/appStore.ts`)                                                                                                                                | Implementado                                                                           |
+| Internacionalización          | `i18n-js` + `expo-localization` (ca/es/en)                                                                                                                       | Implementado (migración progresiva)                                                    |
+| Autenticación                 | Firebase Auth — **Google** (`expo-auth-session`), **correo/contraseña** (login + registro), **invitado anónimo**, upgrade invitado→Google (`linkWithCredential`) | Implementado (pendiente: Apple Sign-In en iOS si se publica con Google, SMS, pulir UX) |
+| Base de datos                 | Firestore — `users/{uid}` (perfil/sesión) y **`requests`** (solicitud al confirmar envío en cliente; reglas por `clientId`)                                      | Implementado (MVP)                                                                     |
+| Observabilidad                | `@sentry/react-native` (opcional via DSN)                                                                                                                        | Implementado                                                                           |
+| Calidad                       | Jest + Testing Library, ESLint endurecido, Prettier + Husky                                                                                                      | Implementado                                                                           |
+| CI                            | GitHub Actions (`typecheck` / `lint` / `test`)                                                                                                                   | Implementado                                                                           |
+| Mapas y rutas                 | Mapbox SDK                                                                                                                                                       | Planificado                                                                            |
+| Pagos                         | Stripe (PaymentIntents + webhooks)                                                                                                                               | Planificado                                                                            |
+| Lógica servidor               | Firebase Cloud Functions                                                                                                                                         | Planificado                                                                            |
+| Algoritmo de _matching_ (FPD) | Descomposición fluido-partícula                                                                                                                                  | Planificado                                                                            |
 
 Detalle técnico completo en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -79,7 +79,7 @@ Sin variables de Firebase la app arranca igual; el bootstrap de Auth/Firestore q
 ├── App.tsx                  Punto de entrada (proveedores + ErrorBoundary)
 ├── app.config.ts            Configuración de Expo (id, iconos, web, etc.)
 ├── eas.json                 Perfiles de build EAS (dev/preview/production)
-├── firestore.rules          Reglas de seguridad de Firestore (ejemplo)
+├── firestore.rules          Reglas de seguridad de Firestore (`users`, `requests`)
 ├── shared/
 │   └── types.ts             Tipos del dominio
 ├── src/
@@ -171,7 +171,17 @@ Copia [`.env.example`](.env.example) a `.env.local` y rellena los valores. **Nun
 2. Activa **Authentication** y habilita los métodos **Anónimo** y **Google**.
 3. Activa **Firestore** en modo de prueba o con reglas propias.
 4. Despliega las reglas de ejemplo: [`firestore.rules`](firestore.rules) (`firebase deploy --only firestore:rules` o pegar en la consola).
-5. Rellena `EXPO_PUBLIC_FIREBASE_*` en `.env.local` y reinicia Expo.
+5. Rellena `EXPO_PUBLIC_FIREBASE_*` en `.env.local` y reinicia Expo. La app usa **siempre** Auth, Firestore, Storage y Functions en la **nube** (plan Blaze).
+
+**Despliegue backend (tras activar Blaze):** desde la raíz del repo, con Firebase CLI iniciado en tu proyecto:
+
+```bash
+npm run deploy:firebase
+```
+
+Esto publica reglas de Firestore, reglas de Storage y Cloud Functions (`onShippingRequestCreate`, `claimShippingRequest`). El cliente web/PWA: `npm run deploy:hosting` (o `npm run build:web` + subir `dist/`).
+
+Para validar **reglas de Firestore** en CI o local sin desplegar: `npm run test:firestore-rules` (usa temporalmente el emulador de Firestore solo durante el test; no afecta a la app).
 
 La pantalla de Login permite **continuar como invitado** (sesión anónima de Firebase) o **iniciar con Google**. Cuando la sesión se confirma, [`useAuthSync`](src/hooks/useAuthSync.ts) refleja al usuario en el store global y `App.tsx` avanza a la selección de perfil. Sin variables de entorno de Google, el botón de Google aparece deshabilitado y solo queda disponible el modo invitado.
 

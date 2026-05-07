@@ -46,6 +46,19 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Jest (caché local; ver `cacheDirectory` en jest.config.js)
+.jest-cache/
+
+# PWA (generados por `scripts/copy-pwa-assets.cjs` antes del export web)
+public/pwa-192.png
+public/pwa-512.png
+
+# Worker de Mapbox (generado por `scripts/copy-mapbox-worker.cjs` antes del export web)
+public/mapbox-gl-csp-worker.js
+
+# Firebase Functions (compilado local / predeploy)
+functions/lib
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

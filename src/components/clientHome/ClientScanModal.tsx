@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Modal, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { CheckCircle2, Maximize, Sparkles } from 'lucide-react-native';
-import type { PackageSize } from '../../../shared/types';
-import { theme } from '../../theme';
+import type { PackagePhysicalSpec } from '../../../shared/types';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 const WIN_H = Dimensions.get('window').height;
 
@@ -24,11 +24,12 @@ export interface ScanModalStyles {
 
 interface Props {
   visible: boolean;
-  scanResult: { size: PackageSize; label: string } | null;
+  scanResult: { specs: PackagePhysicalSpec; label: string } | null;
   styles: ScanModalStyles;
 }
 
 export function ClientScanModal({ visible, scanResult, styles: s }: Props) {
+  const theme = useAppTheme();
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={s.scanOverlay} accessibilityViewIsModal>
@@ -42,8 +43,8 @@ export function ClientScanModal({ visible, scanResult, styles: s }: Props) {
           />
           <View style={s.scanDim} />
           <View style={s.scanFrame}>
-            <View style={s.scanIconCenter}>
-              <Maximize color="rgba(48,112,240,0.3)" size={56} />
+            <View style={[s.scanIconCenter, { opacity: 0.3 }]}>
+              <Maximize color={theme.electricBlue} size={56} />
             </View>
             <View style={s.scanLine} />
           </View>
@@ -54,7 +55,7 @@ export function ClientScanModal({ visible, scanResult, styles: s }: Props) {
           <View style={s.scanBottom}>
             {scanResult ? (
               <View style={s.scanResult}>
-                <CheckCircle2 color="#fff" size={20} />
+                <CheckCircle2 color={theme.onPrimary} size={20} />
                 <Text style={s.scanResultTxt}> {scanResult.label}</Text>
               </View>
             ) : (

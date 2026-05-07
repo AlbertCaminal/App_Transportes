@@ -18,7 +18,7 @@ describe('useClientMissionSimulation', () => {
     const setHasMatch = jest.fn();
 
     const view = renderHook(() =>
-      useClientMissionSimulation(step, isOpenRoute, false, setSim, setMatch, setCarrier, setHasMatch)
+      useClientMissionSimulation(step, isOpenRoute, false, setSim, setMatch, setCarrier, setHasMatch, false)
     );
 
     return { view, setSim, setMatch, setCarrier, setHasMatch };
@@ -59,5 +59,19 @@ describe('useClientMissionSimulation', () => {
       jest.advanceTimersByTime(20000);
     });
     expect(setHasMatch).not.toHaveBeenCalled();
+  });
+
+  it('con disableSimulation no simula match en tracking', () => {
+    const setSim = jest.fn();
+    const setMatch = jest.fn();
+    const setCarrier = jest.fn();
+    const setHasMatch = jest.fn();
+    renderHook(() =>
+      useClientMissionSimulation('tracking', true, false, setSim, setMatch, setCarrier, setHasMatch, true)
+    );
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(setHasMatch).not.toHaveBeenCalledWith(true);
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronLeft, UserPlus, Check } from 'lucide-react-native';
-import { theme } from '../theme';
+import type { AppPalette } from '../theme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { useT } from '../i18n/useT';
 import { registerWithEmailProfile } from '../services/firebase/auth';
 import { isFirebaseConfigured } from '../config/firebase';
@@ -40,8 +41,201 @@ interface Props {
   onLegalHelp: () => void;
 }
 
+function registerStyles(theme: AppPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    root: {
+      flex: 1,
+      backgroundColor: theme.deepNight,
+      paddingHorizontal: 24,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 48,
+      paddingTop: 88,
+    },
+    backBtn: {
+      position: 'absolute',
+      top: 32,
+      left: 24,
+      zIndex: 10,
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: theme.surfaceDark,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    center: { alignItems: 'center' },
+    logoWrap: {
+      width: 96,
+      height: 96,
+      borderRadius: 32,
+      backgroundColor: theme.electricBlue,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 24,
+      shadowColor: theme.electricBlue,
+      shadowOpacity: 0.35,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '900',
+      color: theme.white,
+      textAlign: 'center',
+    },
+    subtitle: {
+      marginTop: 12,
+      color: theme.textOnDarkMuted,
+      fontSize: 14,
+      lineHeight: 21,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+      maxWidth: 360,
+    },
+    hint: {
+      marginTop: 14,
+      color: theme.textOnDarkMuted,
+      fontSize: 13,
+      lineHeight: 19,
+      textAlign: 'center',
+      paddingHorizontal: 12,
+      maxWidth: 360,
+      fontStyle: 'italic',
+    },
+    actions: {
+      width: '100%',
+      maxWidth: 360,
+      marginTop: 24,
+      gap: 12,
+      alignSelf: 'center',
+    },
+    input: {
+      width: '100%',
+      backgroundColor: theme.surfaceDark,
+      borderWidth: 1,
+      borderColor: theme.borderMuted,
+      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.white,
+    },
+    inputError: {
+      borderColor: '#EF4444',
+      borderWidth: 2,
+      backgroundColor: 'rgba(239,68,68,0.06)',
+    },
+    phoneHint: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.gray600,
+      marginTop: 4,
+      marginBottom: -4,
+      paddingHorizontal: 4,
+      lineHeight: 16,
+    },
+    termsWrap: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      marginTop: 8,
+      padding: 14,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    termsWrapError: {
+      borderColor: '#EF4444',
+      borderWidth: 2,
+      backgroundColor: 'rgba(239,68,68,0.08)',
+    },
+    termsCheckboxHit: {
+      paddingTop: 2,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: theme.gray600,
+      marginTop: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxOn: {
+      borderColor: theme.electricBlue,
+      backgroundColor: theme.electricBlue,
+    },
+    checkboxError: {
+      borderColor: '#EF4444',
+      backgroundColor: 'rgba(239,68,68,0.12)',
+    },
+    termsText: {
+      flex: 1,
+      fontSize: 13,
+      lineHeight: 19,
+      color: theme.gray500,
+      fontWeight: '600',
+    },
+    termsTextError: {
+      color: '#FCA5A5',
+    },
+    termsPrivacyLink: {
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: '800',
+      color: theme.electricBlue,
+      textDecorationLine: 'underline',
+    },
+    termsPrivacyLinkOnError: {
+      color: '#93C5FD',
+    },
+    cta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      marginTop: 16,
+      paddingVertical: 16,
+      borderRadius: 16,
+      backgroundColor: theme.electricBlue,
+    },
+    ctaTxt: {
+      color: theme.onPrimary,
+      fontWeight: '900',
+      fontSize: 15,
+    },
+    btnPressed: { opacity: 0.92 },
+    btnDisabled: { opacity: 0.45 },
+    error: {
+      color: '#FCA5A5',
+      fontSize: 13,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    loginLink: {
+      alignSelf: 'center',
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+    },
+    loginLinkTxt: {
+      color: theme.electricBlue,
+      fontWeight: '800',
+      fontSize: 14,
+    },
+  });
+}
+
 export default function Register({ onBack, onLegalHelp }: Props) {
   const t = useT();
+  const theme = useAppTheme();
+  const styles = useMemo(() => registerStyles(theme), [theme]);
   const firebaseReady = isFirebaseConfigured();
 
   const [name, setName] = useState('');
@@ -155,7 +349,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
         >
           <View style={styles.center}>
             <View style={styles.logoWrap}>
-              <UserPlus color={theme.white} size={40} />
+              <UserPlus color={theme.onPrimary} size={40} />
             </View>
             <Text style={styles.title}>{t('register.title')}</Text>
             <Text style={styles.subtitle}>{t('register.subtitle')}</Text>
@@ -170,7 +364,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                   setInvalid((prev) => ({ ...prev, name: false }));
                 }}
                 placeholder={t('register.placeholderName')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 autoCapitalize="words"
                 autoCorrect={false}
                 textContentType="name"
@@ -185,7 +379,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                   setInvalid((prev) => ({ ...prev, email: false }));
                 }}
                 placeholder={t('register.placeholderEmail')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -202,7 +396,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                   setInvalid((prev) => ({ ...prev, password: false }));
                 }}
                 placeholder={t('register.placeholderPassword')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password-new"
@@ -218,7 +412,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                   setInvalid((prev) => ({ ...prev, passwordConfirm: false }));
                 }}
                 placeholder={t('register.placeholderPasswordConfirm')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password-new"
@@ -233,7 +427,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                   setPhone(v);
                 }}
                 placeholder={t('register.placeholderPhone')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 keyboardType="phone-pad"
                 autoComplete="tel"
                 textContentType="telephoneNumber"
@@ -256,7 +450,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                       invalid.terms && !acceptedTerms && styles.checkboxError,
                     ]}
                   >
-                    {acceptedTerms ? <Check color={theme.white} size={16} strokeWidth={3} /> : null}
+                    {acceptedTerms ? <Check color={theme.onPrimary} size={16} strokeWidth={3} /> : null}
                   </View>
                 </Pressable>
                 <Text style={[styles.termsText, invalid.terms && styles.termsTextError]}>
@@ -286,7 +480,7 @@ export default function Register({ onBack, onLegalHelp }: Props) {
                 ]}
               >
                 <Text style={styles.ctaTxt}>{loading ? t('login.loading') : t('register.submit')}</Text>
-                {loading && <ActivityIndicator size="small" color={theme.white} />}
+                {loading && <ActivityIndicator size="small" color={theme.onPrimary} />}
               </Pressable>
 
               {fieldError ? (
@@ -305,192 +499,3 @@ export default function Register({ onBack, onLegalHelp }: Props) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  root: {
-    flex: 1,
-    backgroundColor: theme.deepNight,
-    paddingHorizontal: 24,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 48,
-    paddingTop: 88,
-  },
-  backBtn: {
-    position: 'absolute',
-    top: 32,
-    left: 24,
-    zIndex: 10,
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: theme.surfaceDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  center: { alignItems: 'center' },
-  logoWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 32,
-    backgroundColor: theme.electricBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    shadowColor: theme.electricBlue,
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: theme.white,
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 12,
-    color: theme.gray500,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    maxWidth: 360,
-  },
-  hint: {
-    marginTop: 14,
-    color: theme.gray600,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
-    paddingHorizontal: 12,
-    maxWidth: 360,
-    fontStyle: 'italic',
-  },
-  actions: {
-    width: '100%',
-    maxWidth: 360,
-    marginTop: 24,
-    gap: 12,
-    alignSelf: 'center',
-  },
-  input: {
-    width: '100%',
-    backgroundColor: theme.surfaceDark,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.white,
-  },
-  inputError: {
-    borderColor: '#EF4444',
-    borderWidth: 2,
-    backgroundColor: 'rgba(239,68,68,0.06)',
-  },
-  phoneHint: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.gray600,
-    marginTop: 4,
-    marginBottom: -4,
-    paddingHorizontal: 4,
-    lineHeight: 16,
-  },
-  termsWrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  termsWrapError: {
-    borderColor: '#EF4444',
-    borderWidth: 2,
-    backgroundColor: 'rgba(239,68,68,0.08)',
-  },
-  termsCheckboxHit: {
-    paddingTop: 2,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: theme.gray600,
-    marginTop: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxOn: {
-    borderColor: theme.electricBlue,
-    backgroundColor: theme.electricBlue,
-  },
-  checkboxError: {
-    borderColor: '#EF4444',
-    backgroundColor: 'rgba(239,68,68,0.12)',
-  },
-  termsText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    color: theme.gray500,
-    fontWeight: '600',
-  },
-  termsTextError: {
-    color: '#FCA5A5',
-  },
-  termsPrivacyLink: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '800',
-    color: theme.electricBlue,
-    textDecorationLine: 'underline',
-  },
-  termsPrivacyLinkOnError: {
-    color: '#93C5FD',
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 16,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: theme.electricBlue,
-  },
-  ctaTxt: {
-    color: theme.white,
-    fontWeight: '900',
-    fontSize: 15,
-  },
-  btnPressed: { opacity: 0.92 },
-  btnDisabled: { opacity: 0.45 },
-  error: {
-    color: '#FCA5A5',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  loginLink: {
-    alignSelf: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-  },
-  loginLinkTxt: {
-    color: theme.electricBlue,
-    fontWeight: '800',
-    fontSize: 14,
-  },
-});

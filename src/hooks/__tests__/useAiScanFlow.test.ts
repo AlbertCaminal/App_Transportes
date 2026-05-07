@@ -4,7 +4,7 @@ import { useAiScanFlow } from '../useAiScanFlow';
 describe('useAiScanFlow', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.spyOn(Math, 'random').mockReturnValue(0); // fuerza 'XS'
+    jest.spyOn(Math, 'random').mockReturnValue(0);
   });
 
   afterEach(() => {
@@ -18,7 +18,7 @@ describe('useAiScanFlow', () => {
     expect(result.current.scanResult).toBeNull();
   });
 
-  it('express: tras SCAN_PHASE aplica tamaño express y muestra banner', () => {
+  it('express: tras SCAN_PHASE aplica medidas y muestra banner', () => {
     const onExpress = jest.fn();
     const onPkg = jest.fn();
     const onHide = jest.fn();
@@ -33,12 +33,19 @@ describe('useAiScanFlow', () => {
       jest.advanceTimersByTime(2500);
     });
 
-    expect(onExpress).toHaveBeenCalledWith('XS');
+    expect(onExpress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lengthCm: expect.any(Number),
+        widthCm: expect.any(Number),
+        heightCm: expect.any(Number),
+        weightKg: expect.any(Number),
+      })
+    );
     expect(onPkg).not.toHaveBeenCalled();
-    expect(result.current.scanResult?.size).toBe('XS');
+    expect(result.current.scanResult?.specs).toEqual(onExpress.mock.calls[0][0]);
   });
 
-  it('paquete individual: aplica tamaño al id correcto y oculta precio al final', () => {
+  it('paquete individual: aplica medidas al id correcto y oculta precio al final', () => {
     const onExpress = jest.fn();
     const onPkg = jest.fn();
     const onHide = jest.fn();
@@ -50,7 +57,12 @@ describe('useAiScanFlow', () => {
     act(() => {
       jest.advanceTimersByTime(2500);
     });
-    expect(onPkg).toHaveBeenCalledWith('pkg-1', 'XS');
+    expect(onPkg).toHaveBeenCalledWith(
+      'pkg-1',
+      expect.objectContaining({
+        lengthCm: expect.any(Number),
+      })
+    );
 
     act(() => {
       jest.advanceTimersByTime(1500);
@@ -74,7 +86,7 @@ describe('useAiScanFlow', () => {
     });
 
     expect(onPkg).toHaveBeenCalledTimes(1);
-    expect(onPkg).toHaveBeenCalledWith('pkg-2', 'XS');
+    expect(onPkg).toHaveBeenCalledWith('pkg-2', expect.any(Object));
   });
 
   it('desmontar cancela timers pendientes', () => {

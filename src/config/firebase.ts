@@ -1,15 +1,20 @@
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
+
+function trimEnv(v: string | undefined): string {
+  return (v ?? '').trim();
+}
 
 function readFirebaseOptions(): FirebaseOptions | null {
   const o: Partial<FirebaseOptions> = {
-    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    apiKey: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_API_KEY),
+    authDomain: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN),
+    projectId: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID),
+    storageBucket: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET),
+    messagingSenderId: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+    appId: trimEnv(process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
   };
   if (!o.apiKey || !o.authDomain || !o.projectId || !o.storageBucket || !o.messagingSenderId || !o.appId) {
     return null;
@@ -25,6 +30,7 @@ export function isFirebaseConfigured(): boolean {
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
+let storage: FirebaseStorage | undefined;
 
 export function getFirebaseApp(): FirebaseApp | undefined {
   const opts = readFirebaseOptions();
@@ -51,4 +57,13 @@ export function getFirestoreDb(): Firestore | undefined {
     db = getFirestore(a);
   }
   return db;
+}
+
+export function getFirebaseStorage(): FirebaseStorage | undefined {
+  const a = getFirebaseApp();
+  if (!a) return undefined;
+  if (!storage) {
+    storage = getStorage(a);
+  }
+  return storage;
 }

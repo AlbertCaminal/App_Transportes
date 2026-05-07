@@ -1,21 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PackageSize } from '../../shared/types';
+import type { PackagePhysicalSpec } from '../../shared/types';
+import { formatPackageSpecsLine } from '../utils/packageSpecsFormat';
 
 const SCAN_PHASE_MS = 2500;
 const RESULT_HOLD_MS = 1500;
 
 type ScanId = string | 'express';
 
+function randomSpecs(): PackagePhysicalSpec {
+  const r = Math.random;
+  const lengthCm = 30 + Math.floor(r() * 100);
+  const widthCm = 20 + Math.floor(r() * 80);
+  const heightCm = 15 + Math.floor(r() * 60);
+  const weightKg = Math.round((2 + r() * 48) * 10) / 10;
+  return { lengthCm, widthCm, heightCm, weightKg };
+}
+
 /**
  * Simula escaneo IA con timeouts cancelables al desmontar o al iniciar otro escaneo.
  */
 export function useAiScanFlow(
-  onExpressSize: (s: PackageSize) => void,
-  onPackageSize: (id: string, s: PackageSize) => void,
+  onExpressSpecs: (s: PackagePhysicalSpec) => void,
+  onPackageSpecs: (id: string, s: PackagePhysicalSpec) => void,
   onHidePrice: () => void
 ) {
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<{ size: PackageSize; label: string } | null>(null);
+  const [scanResult, setScanResult] = useState<{ specs: PackagePhysicalSpec; label: string } | null>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearTimers = useCallback(() => {
@@ -31,18 +41,17 @@ export function useAiScanFlow(
       setIsScanning(true);
 
       const t1 = setTimeout(() => {
-        const sizes: PackageSize[] = ['XS', 'S', 'M', 'H'];
-        const detectedSize = sizes[Math.floor(Math.random() * sizes.length)];
+        const detected = randomSpecs();
 
         if (id === 'express') {
-          onExpressSize(detectedSize);
+          onExpressSpecs(detected);
         } else {
-          onPackageSize(id, detectedSize);
+          onPackageSpecs(id, detected);
         }
 
         setScanResult({
-          size: detectedSize,
-          label: `Medida [${detectedSize}] detectada con éxito`,
+          specs: detected,
+          label: `${formatPackageSpecsLine(detected)} detectadas`,
         });
 
         const t2 = setTimeout(() => {
@@ -54,7 +63,7 @@ export function useAiScanFlow(
       }, SCAN_PHASE_MS);
       timersRef.current.push(t1);
     },
-    [clearTimers, onExpressSize, onPackageSize, onHidePrice]
+    [clearTimers, onExpressSpecs, onPackageSpecs, onHidePrice]
   );
 
   return { isScanning, scanResult, handleAIScan };

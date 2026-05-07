@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronLeft, LogIn } from 'lucide-react-native';
-import { theme } from '../theme';
+import type { AppPalette } from '../theme';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { useT } from '../i18n/useT';
 import {
   GOOGLE_AUTH_STUB,
@@ -23,10 +24,185 @@ import { signInAsGuest, signInWithEmailPassword } from '../services/firebase/aut
 import { isFirebaseConfigured } from '../config/firebase';
 import { firebaseAuthCodeToTranslationKey, readFirebaseAuthCode } from '../utils/firebaseAuthErrors';
 
+/** Botón Google: fondo siempre blanco de marca, independiente del tema. */
+const GOOGLE_BTN_FG = '#0F172A';
+
 interface Props {
   onBack: () => void;
   onLegalHelp: () => void;
   onGoToRegister: () => void;
+}
+
+function loginStyles(theme: AppPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    root: {
+      flex: 1,
+      backgroundColor: theme.deepNight,
+      paddingHorizontal: 24,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 40,
+      paddingTop: 88,
+    },
+    backBtn: {
+      position: 'absolute',
+      top: 32,
+      left: 24,
+      zIndex: 10,
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: theme.surfaceDark,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    center: { alignItems: 'center' },
+    logoWrap: {
+      width: 96,
+      height: 96,
+      borderRadius: 32,
+      backgroundColor: theme.electricBlue,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 32,
+      shadowColor: theme.electricBlue,
+      shadowOpacity: 0.4,
+      shadowRadius: 24,
+      elevation: 8,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '900',
+      color: theme.white,
+      textAlign: 'center',
+    },
+    subtitle: {
+      marginTop: 12,
+      color: theme.textOnDarkMuted,
+      fontSize: 14,
+      textAlign: 'center',
+      paddingHorizontal: 16,
+      maxWidth: 320,
+    },
+    actions: {
+      width: '100%',
+      maxWidth: 360,
+      marginTop: 28,
+      gap: 14,
+      alignSelf: 'center',
+    },
+    input: {
+      width: '100%',
+      backgroundColor: theme.surfaceDark,
+      borderWidth: 1,
+      borderColor: theme.borderMuted,
+      borderRadius: 16,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.white,
+    },
+    emailPrimaryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      width: '100%',
+      paddingVertical: 16,
+      backgroundColor: theme.electricBlue,
+      borderRadius: 16,
+    },
+    emailPrimaryTxt: {
+      color: theme.onPrimary,
+      fontWeight: '800',
+      fontSize: 15,
+    },
+    linkRow: { paddingVertical: 4, alignSelf: 'center' },
+    linkTxt: {
+      color: theme.electricBlue,
+      fontWeight: '700',
+      fontSize: 13,
+      textAlign: 'center',
+    },
+    dividerTxt: {
+      color: theme.gray600,
+      fontSize: 12,
+      fontWeight: '700',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginTop: 4,
+      marginBottom: 2,
+    },
+    googleBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      width: '100%',
+      paddingVertical: 16,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    googleBtnText: {
+      color: GOOGLE_BTN_FG,
+      fontWeight: '700',
+      fontSize: 15,
+    },
+    googleMark: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#4285F4',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    googleMarkText: { color: '#fff', fontWeight: '900', fontSize: 14 },
+    guestBtn: {
+      width: '100%',
+      paddingVertical: 16,
+      backgroundColor: theme.surfaceDark,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderMuted,
+      alignItems: 'center',
+    },
+    guestBtnText: {
+      color: theme.white,
+      fontWeight: '700',
+      fontSize: 15,
+    },
+    btnPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+    btnDisabled: { opacity: 0.5 },
+    notConfigured: {
+      color: theme.gray500,
+      fontSize: 12,
+      textAlign: 'center',
+      marginTop: -6,
+    },
+    error: {
+      color: '#FCA5A5',
+      fontSize: 13,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    legalLink: { marginTop: 28, paddingVertical: 12, paddingHorizontal: 8 },
+    legalLinkTxt: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.gray500,
+      textDecorationLine: 'underline',
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+  });
 }
 
 /**
@@ -51,6 +227,8 @@ interface LoginBodyProps extends Props {
 
 function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBodyProps) {
   const t = useT();
+  const theme = useAppTheme();
+  const styles = useMemo(() => loginStyles(theme), [theme]);
   const firebaseReady = isFirebaseConfigured();
   const { signIn: signInWithGoogle, loading: googleLoading, error: googleError, configured } = googleAuth;
 
@@ -118,7 +296,7 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
         >
           <View style={styles.center}>
             <View style={styles.logoWrap}>
-              <LogIn color={theme.white} size={40} />
+              <LogIn color={theme.onPrimary} size={40} />
             </View>
             <Text style={styles.title}>{t('login.title')}</Text>
             <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
@@ -131,7 +309,7 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
                   setEmailFieldError(null);
                 }}
                 placeholder={t('login.email.placeholderEmail')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -147,7 +325,7 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
                   setEmailFieldError(null);
                 }}
                 placeholder={t('login.email.placeholderPassword')}
-                placeholderTextColor={theme.gray800}
+                placeholderTextColor={theme.inputPlaceholder}
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
@@ -171,7 +349,7 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
                 <Text style={styles.emailPrimaryTxt}>
                   {emailLoading ? t('login.loading') : t('login.email.signIn')}
                 </Text>
-                {emailLoading && <ActivityIndicator size="small" color={theme.white} />}
+                {emailLoading && <ActivityIndicator size="small" color={theme.onPrimary} />}
               </Pressable>
 
               <Pressable onPress={onGoToRegister} accessibilityRole="button" style={styles.linkRow}>
@@ -198,7 +376,7 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
                 <Text style={styles.googleBtnText}>
                   {googleLoading ? t('login.loading') : t('login.googleButton')}
                 </Text>
-                {googleLoading && <ActivityIndicator size="small" color={theme.deepNight} />}
+                {googleLoading && <ActivityIndicator size="small" color={GOOGLE_BTN_FG} />}
               </Pressable>
 
               {!configured && <Text style={styles.notConfigured}>{t('login.notConfigured')}</Text>}
@@ -241,171 +419,3 @@ function LoginBody({ onBack, onLegalHelp, onGoToRegister, googleAuth }: LoginBod
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  root: {
-    flex: 1,
-    backgroundColor: theme.deepNight,
-    paddingHorizontal: 24,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
-    paddingTop: 88,
-  },
-  backBtn: {
-    position: 'absolute',
-    top: 32,
-    left: 24,
-    zIndex: 10,
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: theme.surfaceDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  center: { alignItems: 'center' },
-  logoWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 32,
-    backgroundColor: theme.electricBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-    shadowColor: theme.electricBlue,
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: theme.white,
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 12,
-    color: theme.gray500,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    maxWidth: 320,
-  },
-  actions: {
-    width: '100%',
-    maxWidth: 360,
-    marginTop: 28,
-    gap: 14,
-    alignSelf: 'center',
-  },
-  input: {
-    width: '100%',
-    backgroundColor: theme.surfaceDark,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.white,
-  },
-  emailPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    width: '100%',
-    paddingVertical: 16,
-    backgroundColor: theme.electricBlue,
-    borderRadius: 16,
-  },
-  emailPrimaryTxt: {
-    color: theme.white,
-    fontWeight: '800',
-    fontSize: 15,
-  },
-  linkRow: { paddingVertical: 4, alignSelf: 'center' },
-  linkTxt: {
-    color: theme.electricBlue,
-    fontWeight: '700',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  dividerTxt: {
-    color: theme.gray600,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    width: '100%',
-    paddingVertical: 16,
-    backgroundColor: theme.white,
-    borderRadius: 16,
-  },
-  googleBtnText: {
-    color: theme.deepNight,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  googleMark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#4285F4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleMarkText: { color: '#fff', fontWeight: '900', fontSize: 14 },
-  guestBtn: {
-    width: '100%',
-    paddingVertical: 16,
-    backgroundColor: theme.surfaceDark,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-  },
-  guestBtnText: {
-    color: theme.white,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  btnPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  btnDisabled: { opacity: 0.5 },
-  notConfigured: {
-    color: theme.gray500,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: -6,
-  },
-  error: {
-    color: '#FCA5A5',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  legalLink: { marginTop: 28, paddingVertical: 12, paddingHorizontal: 8 },
-  legalLinkTxt: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.gray500,
-    textDecorationLine: 'underline',
-    textAlign: 'center',
-    maxWidth: 320,
-  },
-});

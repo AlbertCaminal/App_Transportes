@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
@@ -9,8 +9,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { Truck, Calendar, Users } from 'lucide-react-native';
-import { theme } from '../theme';
+import { Truck, Calendar } from 'lucide-react-native';
+import type { AppPalette } from '../theme';
+import { useAppTheme } from '../hooks/useAppTheme';
 
 interface Props {
   isTracking?: boolean;
@@ -18,6 +19,8 @@ interface Props {
   isOpenRoute?: boolean;
   originSet?: boolean;
   destinations?: string[];
+  /** Si true, no se muestra el camión animado ficticio durante el seguimiento. */
+  suppressMockCarrier?: boolean;
 }
 
 const originPos = { x: 42, y: 45 };
@@ -27,7 +30,6 @@ const destPositions = [
   { x: 30, y: 60 },
 ];
 const carrierStart = { x: 10, y: 85 };
-const coPassengerPos = { x: 55, y: 35 };
 
 export default function MapMockup({
   isTracking = false,
@@ -35,7 +37,10 @@ export default function MapMockup({
   isOpenRoute = false,
   originSet = false,
   destinations = [],
+  suppressMockCarrier = false,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => mapMockupStyles(theme), [theme]);
   const [dims, setDims] = useState({ w: 1, h: 1 });
   const dw = useSharedValue(1);
   const dh = useSharedValue(1);
@@ -53,11 +58,7 @@ export default function MapMockup({
       t.value = 0;
       return;
     }
-    t.value = withRepeat(
-      withTiming(1, { duration: 25000, easing: Easing.linear }),
-      -1,
-      false
-    );
+    t.value = withRepeat(withTiming(1, { duration: 25000, easing: Easing.linear }), -1, false);
   }, [isTracking, t]);
 
   const truckStyle = useAnimatedStyle(() => {
@@ -110,19 +111,10 @@ export default function MapMockup({
         <View style={[styles.marker, { left: `${originPos.x}%`, top: `${originPos.y}%` }]}>
           {isProgrammed && (
             <View style={styles.calBadge}>
-              <Calendar color="#fff" size={16} />
+              <Calendar color={theme.onPrimary} size={16} />
             </View>
           )}
           <View style={styles.originDot} />
-        </View>
-      )}
-
-      {isOpenRoute && isTracking && (
-        <View style={[styles.marker, { left: `${coPassengerPos.x}%`, top: `${coPassengerPos.y}%` }]}>
-          <View style={styles.coPassenger}>
-            <Users color={theme.brandBlue} size={14} />
-          </View>
-          <View style={styles.coDot} />
         </View>
       )}
 
@@ -158,12 +150,12 @@ export default function MapMockup({
         </Svg>
       ) : null}
 
-      {isTracking && (
+      {isTracking && !suppressMockCarrier && (
         <Animated.View style={[truckStyle, { zIndex: 40 }]}>
           <View style={styles.truckBox}>
-            <Truck color="#fff" size={24} />
+            <Truck color={theme.onPrimary} size={24} />
           </View>
-          <Pulse />
+          <Pulse pulseRingStyle={styles.pulseRing} />
         </Animated.View>
       )}
 
@@ -172,7 +164,7 @@ export default function MapMockup({
   );
 }
 
-function Pulse() {
+function Pulse({ pulseRingStyle }: { pulseRingStyle: object }) {
   const s = useSharedValue(1);
   useEffect(() => {
     s.value = withRepeat(
@@ -188,105 +180,92 @@ function Pulse() {
     transform: [{ scale: s.value }],
     opacity: 2 - s.value,
   }));
-  return <Animated.View style={[styles.pulseRing, style]} />;
+  return <Animated.View style={[pulseRingStyle, style]} />;
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: theme.bgRoot,
-    overflow: 'hidden',
-  },
-  marker: {
-    position: 'absolute',
-    zIndex: 20,
-    marginLeft: -10,
-    marginTop: -10,
-    alignItems: 'center',
-  },
-  calBadge: {
-    marginBottom: 8,
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: theme.electricBlue,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  originDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    borderWidth: 3,
-    borderColor: theme.electricBlue,
-  },
-  coPassenger: {
-    padding: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(56,189,248,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(56,189,248,0.4)',
-  },
-  coDot: {
-    position: 'absolute',
-    bottom: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: theme.brandBlue,
-  },
-  destRing: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: theme.brandBlue,
-  },
-  destLabel: {
-    position: 'absolute',
-    bottom: -28,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: 'rgba(11,14,20,0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  destLabelText: {
-    fontSize: 9,
-    fontWeight: '900',
-    color: theme.brandBlue,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  truckBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 18,
-    backgroundColor: theme.electricBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    shadowColor: theme.electricBlue,
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 18,
-    backgroundColor: theme.electricBlue,
-  },
-  vignetteBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '35%',
-    backgroundColor: theme.deepNight,
-    opacity: 0.5,
-  },
-});
+function mapMockupStyles(theme: AppPalette) {
+  return StyleSheet.create({
+    wrap: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.bgRoot,
+      overflow: 'hidden',
+    },
+    marker: {
+      position: 'absolute',
+      zIndex: 20,
+      marginLeft: -10,
+      marginTop: -10,
+      alignItems: 'center',
+    },
+    calBadge: {
+      marginBottom: 8,
+      padding: 8,
+      borderRadius: 12,
+      backgroundColor: theme.electricBlue,
+      borderWidth: 1,
+      borderColor: theme.borderStrong,
+    },
+    originDot: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: theme.onPrimary,
+      borderWidth: 3,
+      borderColor: theme.electricBlue,
+    },
+    destRing: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      borderColor: theme.brandBlue,
+    },
+    destLabel: {
+      position: 'absolute',
+      bottom: -28,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: theme.mapMarkerLabelBg,
+      borderWidth: 1,
+      borderColor: theme.borderMuted,
+    },
+    destLabelText: {
+      fontSize: 9,
+      fontWeight: '900',
+      color: theme.brandBlue,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    truckBox: {
+      width: 48,
+      height: 48,
+      borderRadius: 18,
+      backgroundColor: theme.electricBlue,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.borderStrong,
+      shadowColor: theme.electricBlue,
+      shadowOpacity: 0.5,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    pulseRing: {
+      position: 'absolute',
+      width: 48,
+      height: 48,
+      borderRadius: 18,
+      backgroundColor: theme.electricBlue,
+    },
+    vignetteBottom: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: '35%',
+      backgroundColor: theme.deepNight,
+      opacity: 0.5,
+    },
+  });
+}

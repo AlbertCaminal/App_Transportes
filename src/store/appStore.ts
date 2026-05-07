@@ -6,6 +6,7 @@ import type {
   AppState,
   AuthUser,
   CarrierData,
+  ColorScheme,
   Language,
   LegalReturnStep,
   ResumeAfterAuth,
@@ -32,6 +33,7 @@ function canRestoreRoleFromPersist(prev: AppState, uid: string): boolean {
 
 interface AppStore extends AppState {
   setLang: (lang: Language) => void;
+  setColorScheme: (scheme: ColorScheme) => void;
   selectProfile: (profile: UserProfile) => void;
   openCarrierRegistrationFromAccountSettings: () => void;
   exitCarrierRegistration: () => void;
@@ -46,16 +48,19 @@ interface AppStore extends AppState {
   reset: () => void;
   setAuthInitialized: (value: boolean) => void;
   setResumeAfterAuth: (value: ResumeAfterAuth | null) => void;
+  setClientTrackingRequestId: (id: string | null) => void;
 }
 
 const initial: AppState = {
   lang: detectDeviceLanguage(),
+  colorScheme: 'dark',
   profile: null,
   boundUid: undefined,
   step: 'login',
   user: null,
   authInitialized: false,
   resumeAfterAuth: null,
+  clientTrackingRequestId: null,
 };
 
 export const useAppStore = create<AppStore>()(
@@ -72,6 +77,8 @@ export const useAppStore = create<AppStore>()(
             step: prev.step === 'onboarding' ? (prev.user ? 'profile' : 'login') : prev.step,
           };
         }),
+
+      setColorScheme: (colorScheme) => set({ colorScheme }),
 
       selectProfile: (profile) =>
         set((prev) => {
@@ -156,6 +163,7 @@ export const useAppStore = create<AppStore>()(
               accountSettingsReturnStep: undefined,
               step: 'login',
               resumeAfterAuth: null,
+              clientTrackingRequestId: null,
             };
           }
 
@@ -167,6 +175,7 @@ export const useAppStore = create<AppStore>()(
               carrierData: undefined,
               carrierRegistrationReturnStep: undefined,
               boundUid: undefined,
+              clientTrackingRequestId: null,
             };
           }
 
@@ -233,6 +242,7 @@ export const useAppStore = create<AppStore>()(
           accountSettingsReturnStep: undefined,
           step: 'login',
           resumeAfterAuth: null,
+          clientTrackingRequestId: null,
         }),
 
       reset: () => set({ ...initial }),
@@ -240,6 +250,8 @@ export const useAppStore = create<AppStore>()(
       setAuthInitialized: (value) => set({ authInitialized: value }),
 
       setResumeAfterAuth: (value) => set({ resumeAfterAuth: value }),
+
+      setClientTrackingRequestId: (id) => set({ clientTrackingRequestId: id }),
     }),
     {
       name: 'barcelona-logistics-session',
@@ -248,6 +260,7 @@ export const useAppStore = create<AppStore>()(
         profile: state.profile,
         carrierData: state.carrierData,
         boundUid: state.boundUid,
+        colorScheme: state.colorScheme,
       }),
       version: 1,
     }
