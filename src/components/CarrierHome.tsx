@@ -449,13 +449,21 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
 
   usePublishCarrierLocation(isActive ? activeCarrierRequestId : null, deviceLoc.position);
 
-  /** En servicio: GPS para radar en vivo y avisos de proximidad (antes sólo tras reclamar). */
+  /**
+   * En servicio: GPS para radar en vivo y avisos de proximidad (antes sólo tras reclamar).
+   * Importante: dependemos sólo de `requestDeviceLoc` (callback estable del hook,
+   * envuelto en `useCallback([])`). Si pusiéramos `deviceLoc` entero, el efecto se
+   * re-ejecutaría en cada render porque el hook devuelve un objeto literal nuevo
+   * (`{ ...state, request, reset }`), reiniciando el intervalo de 55 s y disparando
+   * peticiones de geolocation continuas.
+   */
+  const { request: requestDeviceLoc } = deviceLoc;
   useEffect(() => {
     if (!isActive) return;
-    void deviceLoc.request();
-    const timer = setInterval(() => void deviceLoc.request(), 55_000);
+    void requestDeviceLoc();
+    const timer = setInterval(() => void requestDeviceLoc(), 55_000);
     return () => clearInterval(timer);
-  }, [isActive, deviceLoc]);
+  }, [isActive, requestDeviceLoc]);
 
   useEffect(() => {
     if (canUseOpenRequests) return;
