@@ -40,6 +40,11 @@ import {
   ChevronDown,
   HelpCircle,
   User,
+  Package,
+  Box,
+  Wallet,
+  Weight,
+  ShieldCheck,
 } from 'lucide-react-native';
 import CarrierRouteMap from './CarrierRouteMap';
 import LocationPermissionGate from './LocationPermissionGate';
@@ -101,6 +106,8 @@ function formatKmForNotif(lang: Language, km: number): string {
 
 interface Route {
   id: number;
+  /** ID del documento `requests/*` que originó esta entrada (si viene de la nube). */
+  requestId?: string;
   date: string;
   dateObj: Date;
   route: string;
@@ -366,8 +373,10 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
 
     const row = carrierFirestoreRows.find((r) => r.id === activeCarrierRequestId);
     if (row != null && row.data['status'] !== 'assigned') {
+      const releasedId = activeCarrierRequestId;
       setActiveCarrierRequestId(null);
       setAssignedMapRoute(null);
+      setRoutes((prev) => prev.filter((r) => r.requestId !== releasedId));
     }
   }, [
     activeCarrierRequestId,
@@ -549,6 +558,7 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
       try {
         await releaseShippingRequestCallable(requestId);
         setActiveRouteMenu(null);
+        setRoutes((prev) => prev.filter((r) => r.requestId !== requestId));
         setActiveCarrierRequestId((cur) => {
           if (cur === requestId) {
             setAssignedMapRoute(null);
@@ -620,10 +630,12 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
         const price = String(jobSnap['priceFinal'] ?? jobSnap['priceFull'] ?? '—');
         const slot = String(jobSnap['timeSlot'] ?? '—');
         const dateObj = new Date();
+        const claimedRequestId = requestId.trim();
         setRoutes((prev) => [
-          ...prev,
+          ...prev.filter((r) => r.requestId !== claimedRequestId),
           {
             id: Date.now(),
+            requestId: claimedRequestId,
             date: slot,
             dateObj,
             route: line,
@@ -886,7 +898,7 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
                   </View>
                   {confirmedRoutes.length > 0 && (
                     <View style={styles.nextMission}>
-                      <Text style={styles.nextMissionLbl}>Pròxima Missió Confirmada</Text>
+                      <Text style={styles.nextMissionLbl}>{t.nextMissionConfirmed}</Text>
                       <View style={styles.nextMissionRow}>
                         <View>
                           <Text style={styles.routeMain}>{confirmedRoutes[0].route}</Text>
@@ -1192,24 +1204,90 @@ export default function CarrierHome({ lang, carrier, onOpenLegalHelp, onBack }: 
                     theme={theme}
                   />
                   {(() => {
-                    const spec = getPrimarySpecsFromRequest(detailJob as Record<string, unknown>);
-                    return spec ? (
-                      <View style={{ marginBottom: 16 }}>
-                        <CargoDimensionBars spec={spec} theme={theme} />
+                    const isExpress = detailJob['serviceType'] === 'express';
+                    return (
+                      <View style={styles.serviceTypeRow}>
+                        <View style={styles.serviceTypePill}>
+                          <Truck color={theme.electricBlue} size={14} />
+                          <Text style={styles.serviceTypePillTxt}>
+                            {isExpress ? t.serviceExpress : t.serviceProgrammed}
+                          </Text>
+                        </View>
                       </View>
-                    ) : null;
+                    );
                   })()}
-                  <Text style={styles.pkgMeta}>Ruta</Text>
-                  <Text style={[styles.pkgStreet, { marginBottom: 12 }]} numberOfLines={5}>
+                  {(() => {
+                    const spec = getPrimarySpecsFromRequest(detailJob as Record<string, unknown>);
+                    if (!spec) return null;
+                    const dimsTxt = `${Math.round(spec.lengthCm)} × ${Math.round(spec.widthCm)} × ${Math.round(spec.heightCm)} cm`;
+                    const w = spec.weightKg;
+                    const weightTxt = `${w >= 10 ? w.toFixed(1) : w.toFixed(2)} kg`;
+                    const volumeL = (spec.lengthCm * spec.widthCm * spec.heightCm) / 1000;
+                    const volumeTxt = volumeL >= 100 ? `${volumeL.toFixed(0)} L` : `${volumeL.toFixed(1)} L`;
+                    return (
+                      <View style={styles.pkgInfoCard}>
+                        <View style={styles.pkgInfoRow}>
+                          <View style={styles.pkgInfoIcon}>
+                            <Package color={theme.electricBlue} size={18} />
+                          </View>
+                          <Text style={styles.pkgInfoLabel}>{t.pkgDimensions}</Text>
+                          <Text style={styles.pkgInfoValue}>{dimsTxt}</Text>
+                        </View>
+                        <View style={styles.pkgInfoDivider} />
+                        <View style={styles.pkgInfoRow}>
+                          <View style={styles.pkgInfoIcon}>
+                            <Weight color={theme.electricBlue} size={18} />
+                          </View>
+                          <Text style={styles.pkgInfoLabel}>{t.pkgWeight}</Text>
+                          <Text style={styles.pkgInfoValue}>{weightTxt}</Text>
+                        </View>
+                        <View style={styles.pkgInfoDivider} />
+                        <View style={styles.pkgInfoRow}>
+                          <View style={styles.pkgInfoIcon}>
+                            <Box color={theme.electricBlue} size={18} />
+                          </View>
+                          <Text style={styles.pkgInfoLabel}>{t.pkgVolume}</Text>
+                          <Text style={styles.pkgInfoValue}>{volumeTxt}</Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+                  <View style={styles.pkgSectionHead}>
+                    <MapPin color={theme.electricBlue} size={14} />
+                    <Text style={styles.pkgSectionLabel}>{t.routeLabel}</Text>
+                  </View>
+                  <Text style={[styles.pkgStreet, { marginBottom: 16 }]} numberOfLines={5}>
                     {formatShippingRequestRouteLine(detailJob as Record<string, unknown>)}
                   </Text>
-                  <Text style={styles.pkgMeta}>{t.earnings}</Text>
-                  <Text style={[styles.pkgMoney, { marginBottom: 12 }]}>
-                    {String(detailJob['priceFinal'] ?? detailJob['priceFull'] ?? '—')}
-                  </Text>
-                  <View style={[styles.sizeChip, { alignSelf: 'flex-start', marginBottom: 8 }]}>
-                    <Clock color={theme.electricBlue} size={14} />
-                    <Text style={styles.sizeChipTxt}>{String(detailJob['timeSlot'] ?? '—')}</Text>
+                  <View style={styles.pkgTwoColRow}>
+                    <View style={styles.pkgTwoColItem}>
+                      <View style={styles.pkgSectionHead}>
+                        <Wallet color={theme.electricBlue} size={14} />
+                        <Text style={styles.pkgSectionLabel}>{t.earnings}</Text>
+                      </View>
+                      <Text style={styles.pkgMoney}>
+                        {String(detailJob['priceFinal'] ?? detailJob['priceFull'] ?? '—')}
+                      </Text>
+                    </View>
+                    <View style={styles.pkgTwoColItem}>
+                      <View style={styles.pkgSectionHead}>
+                        <Clock color={theme.electricBlue} size={14} />
+                        <Text style={styles.pkgSectionLabel}>{t.pickupSlot}</Text>
+                      </View>
+                      <Text style={styles.pkgTwoColValue}>{String(detailJob['timeSlot'] ?? '—')}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.clientStrip}>
+                    <View style={styles.clientAvatar}>
+                      <User color={theme.electricBlue} size={20} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.clientLine}>{t.clientLabel}</Text>
+                      <View style={styles.clientSubRow}>
+                        <ShieldCheck color={theme.success} size={12} />
+                        <Text style={styles.clientSub}>{t.clientVerified}</Text>
+                      </View>
+                    </View>
                   </View>
                   {claimError ? (
                     <Text style={styles.claimErrInline} accessibilityLiveRegion="polite">
@@ -1936,8 +2014,136 @@ function carrierHomeStyles(theme: AppPalette) {
       letterSpacing: 1.5,
       textTransform: 'uppercase',
     },
-    pkgStreet: { fontSize: 18, fontWeight: '900', color: theme.white },
+    pkgStreet: { fontSize: 17, fontWeight: '800', color: theme.white, lineHeight: 24 },
     pkgMoney: { fontSize: 22, fontWeight: '900', color: theme.success },
+    serviceTypeRow: { flexDirection: 'row', marginBottom: 14 },
+    serviceTypePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: theme.langChipSelectedBg,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    serviceTypePillTxt: {
+      fontSize: 11,
+      fontWeight: '900',
+      color: theme.chipValueBlue,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+    },
+    pkgInfoCard: {
+      backgroundColor: theme.deepNight,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      paddingVertical: 4,
+      marginBottom: 18,
+    },
+    pkgInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      gap: 12,
+    },
+    pkgInfoIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: theme.langChipSelectedBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pkgInfoLabel: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.textOnDarkSecondary,
+    },
+    pkgInfoValue: {
+      fontSize: 14,
+      fontWeight: '900',
+      color: theme.white,
+      letterSpacing: 0.3,
+    },
+    pkgInfoDivider: {
+      height: 1,
+      backgroundColor: theme.divider,
+      marginHorizontal: 14,
+    },
+    pkgSectionHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 6,
+    },
+    pkgSectionLabel: {
+      fontSize: 11,
+      fontWeight: '900',
+      color: theme.textOnDarkMuted,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+    },
+    pkgTwoColRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 16,
+    },
+    pkgTwoColItem: {
+      flex: 1,
+      backgroundColor: theme.deepNight,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    pkgTwoColValue: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: theme.white,
+      letterSpacing: 0.5,
+    },
+    clientStrip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      backgroundColor: theme.deepNight,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      marginBottom: 12,
+    },
+    clientAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.langChipSelectedBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    clientLine: {
+      fontSize: 14,
+      fontWeight: '900',
+      color: theme.white,
+      marginBottom: 2,
+    },
+    clientSubRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    clientSub: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.textOnDarkMuted,
+    },
     notifActions: { flexDirection: 'row', gap: 12 },
     rejectBtn: {
       flex: 1,

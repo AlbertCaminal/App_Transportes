@@ -15,6 +15,16 @@ export type CarrierStrings = {
   closeSession: string;
   calendarTitle: string;
   noMissions: string;
+  nextMissionConfirmed: string;
+  routeLabel: string;
+  pickupSlot: string;
+  serviceExpress: string;
+  serviceProgrammed: string;
+  pkgDimensions: string;
+  pkgWeight: string;
+  pkgVolume: string;
+  clientLabel: string;
+  clientVerified: string;
 };
 
 const COPY: Record<Language, CarrierStrings> = {
@@ -33,6 +43,16 @@ const COPY: Record<Language, CarrierStrings> = {
     closeSession: 'Tancar Sessió',
     calendarTitle: 'La meva Agenda',
     noMissions: 'Sense missions aquest dia',
+    nextMissionConfirmed: 'Pròxima Missió Confirmada',
+    routeLabel: 'Ruta',
+    pickupSlot: 'Franja horària',
+    serviceExpress: 'Express',
+    serviceProgrammed: 'Programat',
+    pkgDimensions: 'Dimensions',
+    pkgWeight: 'Pes',
+    pkgVolume: 'Volum',
+    clientLabel: 'Client',
+    clientVerified: 'Verificat per Barcelona Logistics',
   },
   es: {
     radar: 'Radar Live',
@@ -49,6 +69,16 @@ const COPY: Record<Language, CarrierStrings> = {
     closeSession: 'Cerrar Sesión',
     calendarTitle: 'Mi Agenda',
     noMissions: 'Sin misiones este día',
+    nextMissionConfirmed: 'Próxima Misión Confirmada',
+    routeLabel: 'Ruta',
+    pickupSlot: 'Franja horaria',
+    serviceExpress: 'Express',
+    serviceProgrammed: 'Programado',
+    pkgDimensions: 'Dimensiones',
+    pkgWeight: 'Peso',
+    pkgVolume: 'Volumen',
+    clientLabel: 'Cliente',
+    clientVerified: 'Verificado por Barcelona Logistics',
   },
   en: {
     radar: 'Live Radar',
@@ -65,6 +95,16 @@ const COPY: Record<Language, CarrierStrings> = {
     closeSession: 'Sign Out',
     calendarTitle: 'My Agenda',
     noMissions: 'No missions for this day',
+    nextMissionConfirmed: 'Next Confirmed Mission',
+    routeLabel: 'Route',
+    pickupSlot: 'Pickup window',
+    serviceExpress: 'Express',
+    serviceProgrammed: 'Scheduled',
+    pkgDimensions: 'Dimensions',
+    pkgWeight: 'Weight',
+    pkgVolume: 'Volume',
+    clientLabel: 'Client',
+    clientVerified: 'Verified by Barcelona Logistics',
   },
 };
 
